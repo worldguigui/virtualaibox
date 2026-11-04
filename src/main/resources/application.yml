@@ -4,7 +4,8 @@ server:
 spring:
   config:
     import:
-      - optional:classpath:secrets.yml
+      - optional:classpath:default.yml   # 默认配置，降级处理
+      - optional:classpath:secrets.yml   # 本地私密配置
 
   application:
     name:
@@ -41,15 +42,9 @@ virtual-ai-box:
 langchain4j:
   open-ai:
     chat-model:
-      base-url: https://api.deepseek.com
-      api-key: ${secrets.apikey.deepseek}
-      model-name: deepseek-chat
-      log-responses: false
-      log-requests: false
-    streaming-chat-model:
-      base-url: https://api.deepseek.com
-      api-key: ${secrets.apikey.deepseek}
-      model-name: deepseek-chat
+      base-url: ${llm.${llm.provider}.base-url}
+      api-key: ${llm.${llm.provider}.api-key}
+      model-name: ${llm.${llm.provider}.model-name}
       log-responses: false
       log-requests: false
 
