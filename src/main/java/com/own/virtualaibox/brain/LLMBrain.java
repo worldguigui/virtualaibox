@@ -3,6 +3,7 @@ package com.own.virtualaibox.brain;
 import java.util.Map;
 import java.util.Random;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,6 +12,8 @@ import com.own.virtualaibox.domain.action.MoveAction;
 import com.own.virtualaibox.domain.agent.Agent;
 import com.own.virtualaibox.domain.agent.AgentState;
 import com.own.virtualaibox.domain.world.WorldState;
+import com.own.virtualaibox.properties.PromptProperties;
+import com.own.virtualaibox.properties.RuntimeProperties;
 
 import dev.langchain4j.model.chat.ChatModel;
 import lombok.extern.slf4j.Slf4j;
@@ -19,29 +22,68 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LLMBrain {
 
+    // ---------------------------------------------------------------- 提示词结构脚手架
+    // 与填充逻辑强耦合的段落（占位符语义、字段格式由代码定义）——属代码而非配置，
+    // 常量紧邻使用处，随代码评审。可调的"政策文本"（intro/task）在 prompts/decision/*.txt。
+
+    /** 当前状态段（段尾空行由本常量负责）。 */
+    private static final String STATE_SECTION = "=== 当前状态 ===\n"
+            + "- 当前时间tick：{tick}\n"
+            + "- 你的名字：{name}\n"
+            + "- 你的位置：({x}, {y})\n\n";
+
+    /** 稳定人格段（内容为空时整段省略）。 */
+    private static final String PERSONALITY_SECTION = "=== 你的稳定人格 ===\n{personality}\n\n";
+
+    /** 其他居民列表段标题（段首换行由本常量负责）。 */
+    private static final String OTHERS_SECTION_HEADER = "=== 世界中的其他智能体 ===\n";
+
+    /** 其他居民列表单行模板（行尾换行由本常量负责）。 */
+    private static final String OTHERS_LINE = "- {name} 位于 ({x}, {y})\n";
+
+    /** 记忆段（段首换行由本常量负责；内容为空时整段省略）。 */
+    private static final String MEMORY_SECTION = "\n=== 你的记忆 ===\n{memory}";
+
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final Random random;
+    /** 提示词行为值（virtual-ai-box.prompt 短标量）。 */
+    private final PromptProperties prompt;
+    /** 移动钳制等运行参数（virtual-ai-box.runtime）。 */
+    private final RuntimeProperties runtime;
+    /** 决策提示词模板（classpath:prompts/decision/*.txt，加载时已裁剪首尾空白）。 */
+    private final PromptRegistry prompts;
 
-    public LLMBrain(ChatModel chatModel) {
+    /** 便利构造器：从 classpath 加载默认模板（测试/无 Spring 装配路径）。 */
+    public LLMBrain(ChatModel chatModel, PromptProperties prompt, RuntimeProperties runtime) {
+        this(chatModel, prompt, runtime, new PromptRegistry());
+    }
+
+    /** Spring 装配入口。 */
+    @Autowired
+    public LLMBrain(ChatModel chatModel, PromptProperties prompt, RuntimeProperties runtime,
+                    PromptRegistry prompts) {
         this.chatModel = chatModel;
         this.objectMapper = new ObjectMapper();
         this.random = new Random();
+        this.prompt = prompt;
+        this.runtime = runtime;
+        this.prompts = prompts;
     }
 
 
     public MoveAction decideAction(Agent agent, WorldState worldState) {
         log.info("LLMBrain: Deciding action for agent: {}", agent.getName());
-        
+
         try {
-            String prompt = buildPrompt(agent, worldState);
-            String response = callLLM(prompt);
+            String promptText = buildPrompt(agent, worldState);
+            String response = callLLM(promptText);
             MoveAction action = parseResponse(response, agent.getId());
-            
+
             log.info("LLMBrain: Decision made - move ({}, {}), reason: {}",
                     Integer.valueOf(action.getDeltaX()), Integer.valueOf(action.getDeltaY()), action.getReason());
             return action;
-            
+
         } catch (Exception e) {
             log.error("LLMBrain: Error calling LLM, falling back to random decision", e);
             return randomDecision(agent.getId());
@@ -49,57 +91,68 @@ public class LLMBrain {
     }
 
 
+    /**
+     * 拼装决策提示词：intro/task 两段"政策文本"取自 {@link PromptRegistry}
+     * （文件文本已裁剪首尾空白），脚手架段取自类常量；段间排版由本方法与
+     * 各常量共同负责；人格/记忆段内容为空时整段省略。
+     */
     private String buildPrompt(Agent agent, WorldState worldState) {
         StringBuilder sb = new StringBuilder();
-        
-        sb.append("你是一个AI智能体，正在一个37x37的网格世界中行动。你现在的首要任务是与其他Agent会合。\n");
-        sb.append("你有记忆能力，可以基于过去的经历做出更好的决策。\n\n");
-        
-        sb.append("=== 当前状态 ===\n");
-        sb.append("- 当前时间tick：").append(worldState.getTick()).append("\n");
-        sb.append("- 你的名字：").append(agent.getName()).append("\n");
-        sb.append("- 你的位置：(").append(agent.getState().getX()).append(", ")
-                .append(agent.getState().getY()).append(")\n\n");
+
+        int clamp = runtime.getMoveClamp();
+        sb.append(fill(prompts.get("intro"), Map.of(
+                "width", String.valueOf(worldState.getWorldWidth()),
+                "height", String.valueOf(worldState.getWorldHeight())))).append("\n\n");
+
+        sb.append(fill(STATE_SECTION, Map.of(
+                "tick", String.valueOf(worldState.getTick()),
+                "name", agent.getName(),
+                "x", String.valueOf(agent.getState().getX()),
+                "y", String.valueOf(agent.getState().getY()))));
 
         if (agent.getPersonality() != null) {
-            sb.append("=== 你的稳定人格 ===\n");
-            sb.append(agent.getPersonality().toPromptContext()).append("\n\n");
+            sb.append(fill(PERSONALITY_SECTION, Map.of(
+                    "personality", agent.getPersonality().toPromptContext())));
         }
-        
-        sb.append("=== 世界中的其他智能体 ===\n");
-        for (Map.Entry<String, AgentState> entry : worldState.getAgentStates().entrySet()) {
-            if (!entry.getKey().equals(agent.getId())) {
-                sb.append("- ").append(entry.getValue().getName())
-                        .append(" 位于 (").append(entry.getValue().getX())
-                        .append(", ").append(entry.getValue().getY()).append(")\n");
-            }
-        }
-        
-        // 添加记忆上下文
+
+        sb.append(OTHERS_SECTION_HEADER).append(buildOthers(agent, worldState));
+
         if (agent.getMemory() != null) {
             String memorySummary = agent.getMemory().summarizeMemoriesForLLM(worldState.getTick());
             if (!memorySummary.isEmpty()) {
-                sb.append("\n=== 你的记忆 ===\n");
-                sb.append(memorySummary);
+                sb.append(fill(MEMORY_SECTION, Map.of("memory", memorySummary)));
             }
         }
-        
-        sb.append("\n=== 任务 ===\n");
-        sb.append("请根据当前情况和你的记忆，决定你的下一步行动。\n");
-        sb.append("你可以向x和y方向各移动至多1格。\n");
-        sb.append("请考虑：\n");
-        sb.append("1. 你之前访问过的位置\n");
-        sb.append("2. 你遇见过的其他Agent\n");
-        sb.append("3. 学到的规律和模式\n\n");
-        sb.append("请以JSON格式返回你的决策，格式如下：\n");
-        sb.append("{\n");
-        sb.append("  \"deltaX\": -1到1之间的整数,\n");
-        sb.append("  \"deltaY\": -1到1之间的整数,\n");
-        sb.append("  \"reason\": \"你的决策理由，考虑了哪些因素\"\n");
-        sb.append("}\n");
-        sb.append("只返回JSON，不要其他文字。");
-        
+
+        sb.append("\n").append(fill(prompts.get("task"), Map.of(
+                "moveClamp", String.valueOf(clamp))));
+
         return sb.toString();
+    }
+
+    /** 按 OTHERS_LINE 模板生成其他居民列表文本（每行自带换行）。 */
+    private String buildOthers(Agent agent, WorldState worldState) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, AgentState> entry : worldState.getAgentStates().entrySet()) {
+            if (entry.getKey().equals(agent.getId())) {
+                continue;
+            }
+            AgentState other = entry.getValue();
+            sb.append(fill(OTHERS_LINE, Map.of(
+                    "name", other.getName(),
+                    "x", String.valueOf(other.getX()),
+                    "y", String.valueOf(other.getY()))));
+        }
+        return sb.toString();
+    }
+
+    /** 占位符替换：{key} → value。 */
+    private String fill(String template, Map<String, String> values) {
+        String result = template;
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
+        }
+        return result;
     }
 
     private String callLLM(String userPrompt) {
@@ -118,18 +171,17 @@ public class LLMBrain {
         try {
             String jsonStr = extractJson(response);
             JsonNode json = objectMapper.readTree(jsonStr);
-            
+
             MoveAction action = new MoveAction();
             action.setAgentId(agentId);
             action.setDeltaX(clamp(json.get("deltaX").asInt()));
             action.setDeltaY(clamp(json.get("deltaY").asInt()));
-            //action.setDeltaX(json.get("deltaX").asInt());
-            //action.setDeltaY(json.get("deltaY").asInt());
 
-            action.setReason(json.has("reason") ? json.get("reason").asText() : "LLM决策");
-            
+            action.setReason(json.has("reason") && !json.get("reason").isNull()
+                    ? json.get("reason").asText() : prompt.getDefaultReason());
+
             return action;
-            
+
         } catch (Exception e) {
             log.warn("LLMBrain: Failed to parse LLM response, using random fallback", e);
             return randomDecision(agentId);
@@ -146,15 +198,17 @@ public class LLMBrain {
     }
 
     private int clamp(int value) {
-        return Math.max(-1, Math.min(1, value));
+        int c = runtime.getMoveClamp();
+        return Math.max(-c, Math.min(c, value));
     }
 
     private MoveAction randomDecision(String agentId) {
+        int c = runtime.getMoveClamp();
         MoveAction action = new MoveAction();
         action.setAgentId(agentId);
-        action.setDeltaX(random.nextInt(3) - 1);
-        action.setDeltaY(random.nextInt(3) - 1);
-        action.setReason("Fallback: Random movement");
+        action.setDeltaX(random.nextInt(2 * c + 1) - c);
+        action.setDeltaY(random.nextInt(2 * c + 1) - c);
+        action.setReason(prompt.getFallbackReason());
         return action;
     }
 }

@@ -111,12 +111,12 @@ class WorldEngineTest {
     }
 
     @Test
-    void defaultPersonalityIsStableForTheSameResidentName() {
+    void defaultPersonalityComesFromConfiguredResidents() {
         worldEngine.init();
 
         Agent first = worldEngine.getWorld().getAgents().get(0);
-        assertEquals(first.getPersonality(),
-                com.own.virtualaibox.domain.agent.PersonalityProfile.defaultFor(first.getName()));
+        assertEquals(WorldConfig.defaultConfig().getDefaultResidents().get(0).getPersonality(),
+                first.getPersonality());
     }
 
     @Test

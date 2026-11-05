@@ -41,7 +41,7 @@ class ConvergenceMonitorTest {
     /** 假预言机：与 AgentRuntimeTest 同构，避免测试触发真实网络。 */
     private static class FakeBrain extends LLMBrain {
         FakeBrain() {
-            super(null);
+            super(null, com.own.virtualaibox.properties.PromptProperties.defaults(), com.own.virtualaibox.properties.RuntimeProperties.defaults());
         }
 
         @Override

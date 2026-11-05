@@ -28,25 +28,25 @@ public class Agent implements EventListener {
     /** Agent是否活跃 */
     private boolean active = true;
 
-    /** 保留旧的六参数构造方式，并为居民创建默认人格。 */
+    /** 保留旧的六参数构造方式，并为居民创建通用兜底人格。 */
     public Agent(String id, String name, AgentState state, AgentMemory memory,
                  List<String> eventHistory, boolean active) {
         this.id = id;
         this.name = name;
         this.state = state;
-        this.personality = PersonalityProfile.defaultFor(name);
+        this.personality = PersonalityProfile.generic();
         this.memory = memory;
         this.eventHistory = eventHistory;
         this.active = active;
     }
 
-    /** 创建带有显式人格配置的居民。 */
+    /** 创建带有显式人格配置的居民（人格为 null 时回落到通用兜底人格）。 */
     public Agent(String id, String name, AgentState state, PersonalityProfile personality,
                  AgentMemory memory, List<String> eventHistory, boolean active) {
         this.id = id;
         this.name = name;
         this.state = state;
-        this.personality = personality == null ? PersonalityProfile.defaultFor(name) : personality;
+        this.personality = personality == null ? PersonalityProfile.generic() : personality;
         this.memory = memory;
         this.eventHistory = eventHistory;
         this.active = active;

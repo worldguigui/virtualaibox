@@ -25,7 +25,7 @@ export interface WorldConfig {
   height: number
   rules: Record<string, boolean>
   items: WorldItemDefinition[]
-  defaultResidents: Array<{ name: string; x: number; y: number }>
+  defaultResidents: Array<{ name: string; x: number; y: number; personality?: PersonalityProfile }>
 }
 
 /** 新居民创建请求。坐标为空时由世界引擎分配默认位置。 */

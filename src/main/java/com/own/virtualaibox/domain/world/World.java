@@ -18,7 +18,7 @@ public class World {
     private List<Agent> agents = new ArrayList<>();
 
     public World() {
-        this(37, 37);
+        this(WorldConfig.defaultConfig());
     }
 
     public World(int width, int height) {

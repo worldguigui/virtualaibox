@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Agent, WorldInfo } from '../types'
+import { APP_DEFAULTS } from '../config'
 import { BilingualText } from './i18n'
 
 /** 世界地图组件的输入属性。 */
@@ -11,8 +12,8 @@ interface WorldMapProps {
   status: string
 }
 
-/** 画布基准尺寸:网格在 960x960 内等比缩放 */
-const CANVAS_BASE = 960
+/** 网格在 APP_DEFAULTS.canvasBase 见方内等比缩放 */
+const CANVAS_BASE = APP_DEFAULTS.canvasBase
 const AGENT_COLORS = ['#6d7f5d', '#b66b52', '#c49552', '#8b6f7f', '#78909a', '#9c8064']
 
 /** 绘制世界地图所需的画布和 Agent 参数。 */
@@ -123,8 +124,8 @@ export function WorldMap({ agents, tick, world, selectedAgentId, status }: World
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const width = world?.width ?? 37
-    const height = world?.height ?? 37
+    const width = world?.width ?? APP_DEFAULTS.worldSize
+    const height = world?.height ?? APP_DEFAULTS.worldSize
     const cellSize = Math.floor(Math.min(CANVAS_BASE / width, CANVAS_BASE / height))
     canvas.width = width * cellSize
     canvas.height = height * cellSize
@@ -137,7 +138,7 @@ export function WorldMap({ agents, tick, world, selectedAgentId, status }: World
       <div className="panel-header">
         <div>
           <BilingualText primary="World Map" secondary="世界地图" className="panel-title" />
-          <div className="panel-subtitle">37 × 37 网格世界的实时状态</div>
+          <div className="panel-subtitle">{`${world?.width ?? APP_DEFAULTS.worldSize} × ${world?.height ?? APP_DEFAULTS.worldSize} 网格世界的实时状态`}</div>
         </div>
           <div className="badge">{status}</div>
       </div>
@@ -145,7 +146,7 @@ export function WorldMap({ agents, tick, world, selectedAgentId, status }: World
         <div className="canvas-wrap">
           <div className="canvas-overlay">
             <span className="overlay-tag"><BilingualText primary={`Step ${tick}`} secondary={`第 ${tick} 刻`} /></span>
-            <span className="overlay-tag"><BilingualText primary={`World ${world?.width ?? 37} × ${world?.height ?? 37}`} secondary="世界尺寸" /></span>
+            <span className="overlay-tag"><BilingualText primary={`World ${world?.width ?? APP_DEFAULTS.worldSize} × ${world?.height ?? APP_DEFAULTS.worldSize}`} secondary="世界尺寸" /></span>
             <span className="overlay-tag"><BilingualText primary={`${agents.length} Residents`} secondary={`${agents.length} 位居民`} /></span>
           </div>
           <canvas ref={canvasRef} width={CANVAS_BASE} height={CANVAS_BASE} />

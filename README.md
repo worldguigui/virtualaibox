@@ -82,6 +82,25 @@ http://localhost:8080
 
 > 实施顺序必须遵守：先修正更新逻辑以 `agentId` 为唯一键；再补世界配置层；最后将默认居民生成逻辑改为配置驱动；之后再推进下一阶段功能。
 
+## 配置总览（SSOT：后端 `application.yml`）
+
+> 决策背景与影响见 [`docs/decisions/ADR-0005-config-extraction.md`](docs/decisions/ADR-0005-config-extraction.md)。
+
+| 配置段 | 内容 | 消费方 |
+|---|---|---|
+| `virtual-ai-box.world` | 世界名、尺寸（37×37）、规则、物品、默认居民（坐标 + 人格） | `WorldConfig` → `WorldEngine` |
+| `virtual-ai-box.runtime` | 感知范围(5)、相遇距离(1.5)、事件历史上限(210)、SECD/tick 步数预算、默认计划长度、移动钳制、收敛检测阈值、通用兜底人格 | `RuntimeProperties` → MindController/TickSchedule/EventBus/ConvergenceMonitor 等 |
+| `virtual-ai-box.prompt` | 仅短标量（默认/降级理由）；提示词只外置 `intro.txt`/`task.txt` 两个"政策文本"到 `src/main/resources/prompts/decision/`（`PromptRegistry` 启动加载、缺文件即失败、首尾空白自动裁剪）；注入类脚手架段是代码常量，不进配置（ADR-0005 三问检验） | `PromptProperties` + `PromptRegistry` → `LLMBrain` |
+| `virtual-ai-box.dashboard` | REST 默认值（事件/记忆条数、轻量快照居民数） | `DashboardProperties` → `DashboardController` |
+| `spring.virtual-clock` | 虚拟时钟初始刻度/步长/元时间 | `VirtualClockProperties` |
+| `llm.*` + `langchain4j.*` | LLM 平台选择与密钥（`default.yml`/`secrets.yml`） | langchain4j starter |
+
+**前后端一致性约定**：网格尺寸等世界数据以后端 API 返回为准；前端 `frontend/src/config.ts`
+只保留显示兜底值（须与后端默认值一致），坐标上限从 `worldConfig` 动态解析；人格空字段回落
+由后端三级解析唯一承担，前端只裁剪不预填（避免遮蔽 `runtime.default-personality`）。每个
+配置类的 Java 默认值与 yml 保持一致（yml 是主源），一致性由 `ConfigDefaultsConsistencyTest`
+（Binder 容器外绑定比对）机制化校验。
+
 ## 核心概念速览
 
 | 概念 | 一句话 | 权威文档 |
@@ -108,7 +127,7 @@ docs/
 ├── vision.md              # 为什么做、是什么、边界
 ├── architecture.md        # 当前架构唯一总览 / SSOT
 ├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect）
-├── decisions/             # ADR-0001~0004（架构决策记录）
+├── decisions/             # ADR（架构决策记录）：0005=配置参数提取（0001~0004 尚未落盘）
 ├── changelog.md           # P0-P6 历史演进
 ├── consistency-audit.md   # 文档-代码一致性审计记录
 └── archive/               # 历史文档（只读）：design-v0.3-frozen.md、logs.md

@@ -17,6 +17,7 @@ import com.own.virtualaibox.domain.memory.AgentMemory;
 import com.own.virtualaibox.domain.memory.MemoryStore;
 import com.own.virtualaibox.domain.world.World;
 import com.own.virtualaibox.domain.world.WorldConfig;
+import com.own.virtualaibox.properties.RuntimeProperties;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -29,21 +30,26 @@ public class WorldEngine {
     private final TickSchedule tickSchedule;
     private final EventBus eventBus;
     private final MemoryStore memoryStore;
+    /** 运行参数（通用兜底人格等）。 */
+    private final RuntimeProperties runtime;
     private WorldConfig worldConfig;
     private final World world;
 
     public WorldEngine(VirtualClock virtualClock, TickSchedule tickSchedule,
                        EventBus eventBus, MemoryStore memoryStore) {
-        this(virtualClock, tickSchedule, eventBus, memoryStore, WorldConfig.defaultConfig());
+        this(virtualClock, tickSchedule, eventBus, memoryStore, WorldConfig.defaultConfig(),
+                RuntimeProperties.defaults());
     }
 
     @Autowired
     public WorldEngine(VirtualClock virtualClock, TickSchedule tickSchedule,
-                       EventBus eventBus, MemoryStore memoryStore, WorldConfig worldConfig) {
+                       EventBus eventBus, MemoryStore memoryStore, WorldConfig worldConfig,
+                       RuntimeProperties runtime) {
         this.virtualClock = virtualClock;
         this.tickSchedule = tickSchedule;
         this.eventBus = eventBus;
         this.memoryStore = memoryStore;
+        this.runtime = runtime;
         this.worldConfig = worldConfig == null ? WorldConfig.defaultConfig() : worldConfig;
         this.worldConfig.validate();
         this.world = new World(this.worldConfig);
@@ -54,7 +60,8 @@ public class WorldEngine {
         log.info("WorldEngine: Initializing...");
         if (world.getAgents().isEmpty()) {
             for (WorldConfig.DefaultResident resident : worldConfig.getDefaultResidents()) {
-                createAndAddAgent(resident.getName(), resident.getX(), resident.getY());
+                createAndAddAgent(resident.getName(), resident.getX(), resident.getY(),
+                        resident.getPersonality());
             }
         }
 
@@ -119,7 +126,7 @@ public class WorldEngine {
         agent.setName(nextName);
         agent.getState().setX(nextX);
         agent.getState().setY(nextY);
-        agent.setPersonality(PersonalityProfile.normalizeFor(nextName, personality));
+        agent.setPersonality(resolvePersonality(nextName, personality));
         return agent;
     }
 
@@ -142,12 +149,26 @@ public class WorldEngine {
         return agent;
     }
 
+    /**
+     * 解析居民人格：显式传入的人格（空字段回落）优先，其次世界配置中同名
+     * 默认居民的人格，最后回落到运行时配置的通用兜底人格。
+     */
+    private PersonalityProfile resolvePersonality(String name, PersonalityProfile personality) {
+        PersonalityProfile configured = worldConfig.getDefaultResidents().stream()
+                .filter(resident -> resident.getName().equalsIgnoreCase(name))
+                .findFirst()
+                .map(WorldConfig.DefaultResident::getPersonality)
+                .orElse(null);
+        PersonalityProfile fallback = configured == null ? runtime.getDefaultPersonality() : configured;
+        return PersonalityProfile.normalizeFor(personality, fallback);
+    }
+
     private Agent createAgent(String name, int x, int y, PersonalityProfile personality) {
         String agentId = UUID.randomUUID().toString();
         AgentState state = new AgentState(x, y, name);
 
         AgentMemory memory = new AgentMemory(agentId, memoryStore);
-        PersonalityProfile resolvedPersonality = PersonalityProfile.normalizeFor(name, personality);
+        PersonalityProfile resolvedPersonality = resolvePersonality(name, personality);
 
         Agent agent = new Agent(agentId, name, state, resolvedPersonality,
             memory, new ArrayList<>(), true);

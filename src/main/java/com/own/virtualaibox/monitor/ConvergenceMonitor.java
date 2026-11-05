@@ -8,7 +8,9 @@ import com.own.virtualaibox.domain.event.events.WorldConvergedEvent;
 import com.own.virtualaibox.domain.world.World;
 import com.own.virtualaibox.mind.AgentRuntime;
 import com.own.virtualaibox.mind.MindController;
+import com.own.virtualaibox.properties.RuntimeProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -40,19 +42,24 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ConvergenceMonitor {
 
-    /** 连续原地不动超过该 tick 数 → AgentStuck。 */
-    private static final int STUCK_TICKS = 3;
-    /** 世界整体连续无变化超过该 tick 数 → WorldConverged。 */
-    private static final int CONVERGED_TICKS = 5;
-    /** 位置周期检测的周期上限（A→B→A→B 周期为 2）。 */
-    private static final int MAX_CYCLE_PERIOD = 8;
-    /** 每个 Agent 保留的位置历史长度（检测周期至少需要 2×周期 个位置）。 */
-    private static final int HISTORY_SIZE = 32;
-    /** SECD D 栈深度阈值：超过视为无限归约 / 深递归。 */
-    private static final int MAX_D_STACK_DEPTH = 50;
+    /** 收敛检测阈值（virtual-ai-box.runtime.convergence）。 */
+    private final RuntimeProperties.Convergence thresholds;
 
     private final EventBus eventBus;
     private final MindController mindController;
+
+    /** 测试/纯代码路径：使用默认阈值。 */
+    public ConvergenceMonitor(EventBus eventBus, MindController mindController) {
+        this(eventBus, mindController, RuntimeProperties.defaults());
+    }
+
+    /** Spring 装配：阈值来自运行时配置。 */
+    @Autowired
+    public ConvergenceMonitor(EventBus eventBus, MindController mindController, RuntimeProperties runtime) {
+        this.eventBus = eventBus;
+        this.mindController = mindController;
+        this.thresholds = runtime.getConvergence();
+    }
 
     /** agentId → 位置历史（按 tick 有序，头部最旧）。 */
     private final Map<String, Deque<Position>> positionHistory = new ConcurrentHashMap<>();
@@ -67,11 +74,6 @@ public class ConvergenceMonitor {
     private int stableTicks = 0;
     private String lastWorldSignature = null;
     private boolean convergedFired = false;
-
-    public ConvergenceMonitor(EventBus eventBus, MindController mindController) {
-        this.eventBus = eventBus;
-        this.mindController = mindController;
-    }
 
     /**
      * 每 tick 末尾调用：基于执行后的世界状态做三类收敛检测并发布事件。
@@ -91,7 +93,7 @@ public class ConvergenceMonitor {
         String agentId = agent.getId();
         Deque<Position> history = positionHistory.computeIfAbsent(agentId, k -> new ArrayDeque<>());
         history.addLast(new Position(tick, agent.getState().getX(), agent.getState().getY()));
-        while (history.size() > HISTORY_SIZE) {
+        while (history.size() > thresholds.getHistorySize()) {
             history.removeFirst();
         }
 
@@ -114,14 +116,15 @@ public class ConvergenceMonitor {
         }
     }
 
-    /** 最近 {@value #STUCK_TICKS} 个位置是否完全相同（固定点，非周期）。 */
+    /** 最近 stuck-ticks 个位置是否完全相同（固定点，非周期）。 */
     private boolean isStuck(Deque<Position> history) {
-        if (history.size() < STUCK_TICKS) {
+        int stuckTicks = thresholds.getStuckTicks();
+        if (history.size() < stuckTicks) {
             return false;
         }
         Position last = history.getLast();
         Position[] arr = history.toArray(new Position[0]);
-        for (int i = arr.length - STUCK_TICKS; i < arr.length; i++) {
+        for (int i = arr.length - stuckTicks; i < arr.length; i++) {
             if (!arr[i].samePosition(last)) {
                 return false;
             }
@@ -135,7 +138,7 @@ public class ConvergenceMonitor {
             return false;
         }
         Position[] arr = history.toArray(new Position[0]);
-        for (int L = 2; L <= MAX_CYCLE_PERIOD; L++) {
+        for (int L = 2; L <= thresholds.getMaxCyclePeriod(); L++) {
             if (arr.length < 2 * L) {
                 break;
             }
@@ -172,15 +175,15 @@ public class ConvergenceMonitor {
         event.setAgentName(agent.getName());
         event.setX(agent.getState().getX());
         event.setY(agent.getState().getY());
-        event.setStuckTicks(STUCK_TICKS);
+        event.setStuckTicks(thresholds.getStuckTicks());
         eventBus.publish(event);
-        log.info("ConvergenceMonitor: {} 原地卡住（连续 {} tick 未移动）", agent.getName(), STUCK_TICKS);
+        log.info("ConvergenceMonitor: {} 原地卡住（连续 {} tick 未移动）", agent.getName(), thresholds.getStuckTicks());
     }
 
     private void publishLoop(int tick, Agent agent, Deque<Position> history) {
         Position[] arr = history.toArray(new Position[0]);
         int L = 2;
-        for (; L <= MAX_CYCLE_PERIOD && arr.length >= 2 * L; L++) {
+        for (; L <= thresholds.getMaxCyclePeriod() && arr.length >= 2 * L; L++) {
             if (isCycle(arr, L)) {
                 break;
             }
@@ -222,7 +225,7 @@ public class ConvergenceMonitor {
         String signature = worldSignature(world);
         if (signature.equals(lastWorldSignature)) {
             stableTicks++;
-            if (stableTicks >= CONVERGED_TICKS && !convergedFired) {
+            if (stableTicks >= thresholds.getConvergedTicks() && !convergedFired) {
                 publishConverged(tick, signature);
                 convergedFired = true;
             }
@@ -261,7 +264,7 @@ public class ConvergenceMonitor {
         for (AgentRuntime runtime : mindController.getRuntimes()) {
             Agent agent = runtime.getAgent();
             int depth = runtime.getState().getD().size();
-            if (depth > MAX_D_STACK_DEPTH) {
+            if (depth > thresholds.getMaxDStackDepth()) {
                 if (dStackFired.put(agent.getId(), agent.getName()) == null) {
                     AgentLoopEvent event = new AgentLoopEvent();
                     event.setEventId("dstack_" + agent.getId() + "_" + tick);

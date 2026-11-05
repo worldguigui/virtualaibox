@@ -38,7 +38,9 @@ class DashboardControllerTest {
         controller = new DashboardController(
                 worldEngine,
                 mindController,
-                new ConvergenceMonitor(eventBus, mindController));
+                new ConvergenceMonitor(eventBus, mindController),
+                com.own.virtualaibox.properties.DashboardProperties.defaults(),
+                com.own.virtualaibox.properties.RuntimeProperties.defaults());
     }
 
     @Test
@@ -105,7 +107,9 @@ class DashboardControllerTest {
         DashboardController stepController = new DashboardController(
                 worldEngine,
                 mindController,
-                new ConvergenceMonitor(eventBus, mindController));
+                new ConvergenceMonitor(eventBus, mindController),
+                com.own.virtualaibox.properties.DashboardProperties.defaults(),
+                com.own.virtualaibox.properties.RuntimeProperties.defaults());
 
         Map<String, Object> response = stepController.step();
 
@@ -166,7 +170,7 @@ class DashboardControllerTest {
 
     private static class FakeBrain extends LLMBrain {
         FakeBrain() {
-            super(null);
+            super(null, com.own.virtualaibox.properties.PromptProperties.defaults(), com.own.virtualaibox.properties.RuntimeProperties.defaults());
         }
 
         @Override

@@ -32,13 +32,20 @@ import java.util.List;
  */
 public class DefaultPlanCompiler {
 
-    /** 默认路径长度（tick 数），每 tick 走一格。 */
-    private static final int PATH_LENGTH = 3;
+    /** 默认路径长度（tick 数），每 tick 走一格；可由 virtual-ai-box.runtime.default-plan-length 覆盖。 */
+    private static final int DEFAULT_PATH_LENGTH = 3;
 
     private final LLMBrain llmBrain;
+    /** 本次编译的路径长度（tick 数）。 */
+    private final int pathLength;
 
     public DefaultPlanCompiler(LLMBrain llmBrain) {
+        this(llmBrain, DEFAULT_PATH_LENGTH);
+    }
+
+    public DefaultPlanCompiler(LLMBrain llmBrain, int pathLength) {
         this.llmBrain = llmBrain;
+        this.pathLength = pathLength;
     }
 
     /** 编译新计划并压入状态 C 栈。 */
@@ -52,8 +59,8 @@ public class DefaultPlanCompiler {
         // 记忆副作用：记录本次目标方向
         program.add(app(appOp("remember", constStr("goal")),
                 constStr("head-" + dx + "," + dy)));
-        // 沿方向走 PATH_LENGTH 步
-        for (int i = 0; i < PATH_LENGTH; i++) {
+        // 沿方向走 pathLength 步
+        for (int i = 0; i < pathLength; i++) {
             program.add(app(appOp("move", constInt(dx)), constInt(dy)));
         }
 

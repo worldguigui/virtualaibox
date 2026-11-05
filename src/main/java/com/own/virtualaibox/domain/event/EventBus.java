@@ -1,7 +1,10 @@
 package com.own.virtualaibox.domain.event;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.own.virtualaibox.properties.RuntimeProperties;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -12,27 +15,38 @@ import java.util.concurrent.*;
  * - 多种事件类型的订阅/发布
  * - 事件优先级处理
  * - 同步/异步执行
- * - 事件历史记录
+ * - 事件历史记录（环形缓冲上限来自 virtual-ai-box.runtime.event-history-size）
  */
 @Component
 @Slf4j
 public class EventBus {
-    
+
     // 事件类型 -> 监听者列表
     private final Map<String, List<EventListener>> subscribers = new ConcurrentHashMap<>();
-    
+
     // 全局监听者（监听所有事件）
     private final List<EventListener> globalListeners = new CopyOnWriteArrayList<>();
-    
+
     // 事件历史记录
     private final Deque<DomainEvent> eventHistory = new ConcurrentLinkedDeque<>();
-    
+
     // 历史记录最大容量
-    private static final int MAX_HISTORY_SIZE = 210;
-    
+    private final int maxHistorySize;
+
     // 异步执行线程池
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
-    
+
+    /** 测试/纯代码路径：使用默认历史上限。 */
+    public EventBus() {
+        this(RuntimeProperties.defaults());
+    }
+
+    /** Spring 装配：历史上限来自运行时配置。 */
+    @Autowired
+    public EventBus(RuntimeProperties runtime) {
+        this.maxHistorySize = runtime.getEventHistorySize();
+    }
+
     /**
      * 订阅特定事件类型
      * @param eventType 事件类型
@@ -169,7 +183,7 @@ public class EventBus {
     private void recordEvent(DomainEvent event) {
         eventHistory.offerLast(event);
         // 保持历史大小限制
-        while (eventHistory.size() > MAX_HISTORY_SIZE) {
+        while (eventHistory.size() > maxHistorySize) {
             eventHistory.removeFirst();
         }
     }

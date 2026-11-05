@@ -1,11 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Agent, AgentCreateRequest, PersonalityProfile } from '../types'
+import type { Agent, AgentCreateRequest, PersonalityProfile, WorldConfig } from '../types'
+import { maxCoordinate, normalizeProfile } from '../lib/personality'
 import { BilingualText } from './i18n'
 
 interface AgentEditorModalProps {
   agent: Agent | null
   onClose: () => void
   onSave: (agentId: string, input: AgentCreateRequest) => Promise<void>
+  /** 后端世界配置：人格兜底与坐标上限以它为准（缺省时用前端默认值）。 */
+  worldConfig?: WorldConfig | null
 }
 
 const createBlankProfile = (): PersonalityProfile => ({
@@ -17,55 +20,7 @@ const createBlankProfile = (): PersonalityProfile => ({
   knowledgeBoundary: '',
 })
 
-function buildDefaultProfile(name: string): PersonalityProfile {
-  const trimmed = name.trim() || 'Resident'
-  const lower = trimmed.toLowerCase()
-
-  if (lower === 'alice') {
-    return {
-      role: 'Explorer',
-      temperament: 'Curious and cautious',
-      speakingStyle: 'Gentle, observant, and thoughtful',
-      motivations: 'Learn the town and find new places to investigate',
-      values: 'Facts, safety, and helping others',
-      knowledgeBoundary: 'Only knows what has been sensed, remembered, or verified',
-    }
-  }
-
-  if (lower === 'bob') {
-    return {
-      role: 'Community resident',
-      temperament: 'Warm and proactive',
-      speakingStyle: 'Direct, friendly, and open to conversation',
-      motivations: 'Meet people and build social connections',
-      values: 'Trust, promises, and community care',
-      knowledgeBoundary: 'Only knows what has been perceived or remembered',
-    }
-  }
-
-  return {
-    role: 'Resident',
-    temperament: 'Calm and steady',
-    speakingStyle: 'Clear, polite, and concise',
-    motivations: 'Live in the town and understand the surrounding world',
-    values: 'Safety, honesty, and real experience',
-    knowledgeBoundary: 'Only knows what has been sensed, remembered, or directly verified',
-  }
-}
-
-function normalizeProfile(name: string, profile: PersonalityProfile): PersonalityProfile {
-  const fallback = buildDefaultProfile(name)
-  return {
-    role: profile.role?.trim() || fallback.role,
-    temperament: profile.temperament?.trim() || fallback.temperament,
-    speakingStyle: profile.speakingStyle?.trim() || fallback.speakingStyle,
-    motivations: profile.motivations?.trim() || fallback.motivations,
-    values: profile.values?.trim() || fallback.values,
-    knowledgeBoundary: profile.knowledgeBoundary?.trim() || fallback.knowledgeBoundary,
-  }
-}
-
-export function AgentEditorModal({ agent, onClose, onSave }: AgentEditorModalProps) {
+export function AgentEditorModal({ agent, onClose, onSave, worldConfig }: AgentEditorModalProps) {
   const [name, setName] = useState('')
   const [x, setX] = useState('')
   const [y, setY] = useState('')
@@ -94,7 +49,7 @@ export function AgentEditorModal({ agent, onClose, onSave }: AgentEditorModalPro
         x: x === '' ? undefined : Number(x),
         y: y === '' ? undefined : Number(y),
         personality: Object.values(profile).some((value) => value && value.trim())
-          ? normalizeProfile(name, profile)
+          ? normalizeProfile(profile)
           : undefined,
       })
       onClose()
@@ -121,12 +76,12 @@ export function AgentEditorModal({ agent, onClose, onSave }: AgentEditorModalPro
 
           <label>
             <BilingualText primary="X" secondary="横坐标" />
-            <input type="number" min="0" max="36" value={x} onChange={(event) => setX(event.target.value)} />
+            <input type="number" min="0" max={maxCoordinate(worldConfig, 'width')} value={x} onChange={(event) => setX(event.target.value)} />
           </label>
 
           <label>
             <BilingualText primary="Y" secondary="纵坐标" />
-            <input type="number" min="0" max="36" value={y} onChange={(event) => setY(event.target.value)} />
+            <input type="number" min="0" max={maxCoordinate(worldConfig, 'height')} value={y} onChange={(event) => setY(event.target.value)} />
           </label>
 
           <label className="full-width">

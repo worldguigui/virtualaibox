@@ -33,6 +33,8 @@ import com.own.virtualaibox.domain.world.WorldConfig;
 import com.own.virtualaibox.mind.AgentRuntime;
 import com.own.virtualaibox.mind.MindController;
 import com.own.virtualaibox.monitor.ConvergenceMonitor;
+import com.own.virtualaibox.properties.DashboardProperties;
+import com.own.virtualaibox.properties.RuntimeProperties;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -42,35 +44,46 @@ public class DashboardController {
     private final WorldEngine worldEngine;
     private final MindController mindController;
     private final ConvergenceMonitor convergenceMonitor;
+    /** API 默认值（virtual-ai-box.dashboard）。 */
+    private final DashboardProperties dashboard;
+    /** 运行参数（指标的事件扫描上限）。 */
+    private final RuntimeProperties runtime;
 
-    /** 创建看板控制器并注入运行时查询依赖。 */
     /**
+     * 创建看板控制器并注入运行时查询依赖。
+     *
      * @param worldEngine 世界运行引擎
      * @param mindController Agent 心智运行时控制器
      * @param convergenceMonitor 收敛监控器
+     * @param dashboard API 默认值配置
+     * @param runtime 运行参数配置
      */
     public DashboardController(WorldEngine worldEngine, MindController mindController,
-                               ConvergenceMonitor convergenceMonitor) {
+                               ConvergenceMonitor convergenceMonitor,
+                               DashboardProperties dashboard, RuntimeProperties runtime) {
         this.worldEngine = worldEngine;
         this.mindController = mindController;
         this.convergenceMonitor = convergenceMonitor;
+        this.dashboard = dashboard;
+        this.runtime = runtime;
     }
 
-    /** 汇总看板首页所需的当前运行数据。 */
     /**
-     * @param eventLimit 返回的事件数量上限
-     * @param memoryLimit 每个 Agent 返回的记忆数量上限
+     * 汇总看板首页所需的当前运行数据。
+     *
+     * @param eventLimit 返回的事件数量上限（缺省取配置 default-event-limit）
+     * @param memoryLimit 每个 Agent 返回的记忆数量上限（缺省取配置 default-memory-limit）
      * @return 看板汇总数据
      */
     @GetMapping
-    public Map<String, Object> dashboard(@RequestParam(defaultValue = "30") int eventLimit,
-                                         @RequestParam(defaultValue = "8") int memoryLimit) {
+    public Map<String, Object> dashboard(@RequestParam(required = false) Integer eventLimit,
+                                         @RequestParam(required = false) Integer memoryLimit) {
         Map<String, Object> result = new HashMap<>();
         result.put("tick", worldEngine.getCurrentTick());
         result.put("world", buildWorldInfo());
         result.put("worldConfig", worldEngine.getWorldConfig());
-        result.put("agents", buildAgents(memoryLimit));
-        result.put("events", buildEvents(eventLimit));
+        result.put("agents", buildAgents(memoryLimit == null ? dashboard.getDefaultMemoryLimit() : memoryLimit));
+        result.put("events", buildEvents(eventLimit == null ? dashboard.getDefaultEventLimit() : eventLimit));
         result.put("metrics", buildMetrics());
         result.put("convergence", convergenceMonitor.summary());
         result.put("capabilities", List.of(
@@ -94,9 +107,9 @@ public class DashboardController {
 
         Map<String, Object> result = new HashMap<>();
         result.put("tick", worldEngine.getCurrentTick());
-        result.put("agent", agentToMap(agent, 8));
+        result.put("agent", agentToMap(agent, dashboard.getAgentMemoryLimit()));
         result.put("world", buildWorldInfo());
-        result.put("agents", buildAgents(8));
+        result.put("agents", buildAgents(dashboard.getAgentMemoryLimit()));
         return result;
     }
 
@@ -109,9 +122,9 @@ public class DashboardController {
 
         Map<String, Object> result = new HashMap<>();
         result.put("tick", worldEngine.getCurrentTick());
-        result.put("agent", agentToMap(agent, 8));
+        result.put("agent", agentToMap(agent, dashboard.getAgentMemoryLimit()));
         result.put("world", buildWorldInfo());
-        result.put("agents", buildAgents(8));
+        result.put("agents", buildAgents(dashboard.getAgentMemoryLimit()));
         return result;
     }
 
@@ -127,7 +140,7 @@ public class DashboardController {
         result.put("tick", worldEngine.getCurrentTick());
         result.put("world", buildWorldInfo());
         result.put("worldConfig", config);
-        result.put("agents", buildAgents(8));
+        result.put("agents", buildAgents(dashboard.getAgentMemoryLimit()));
         return result;
     }
 
@@ -142,7 +155,7 @@ public class DashboardController {
         Map<String, Object> result = new HashMap<>();
         result.put("tick", worldEngine.getCurrentTick());
         result.put("world", buildWorldInfo());
-        result.put("agents", buildAgents(8));
+        result.put("agents", buildAgents(dashboard.getAgentMemoryLimit()));
 
         return result;
     }
@@ -156,7 +169,7 @@ public class DashboardController {
         Map<String, Object> result = new HashMap<>();
         result.put("tick", worldEngine.getCurrentTick());
         result.put("world", buildWorldInfo());
-        result.put("agents", buildAgents(3));
+        result.put("agents", buildAgents(dashboard.getStateAgentsLimit()));
         return result;
     }
 
@@ -166,8 +179,8 @@ public class DashboardController {
      * @return 事件数据列表
      */
     @GetMapping("/events")
-    public List<Map<String, Object>> events(@RequestParam(defaultValue = "50") int limit) {
-        return buildEvents(limit);
+    public List<Map<String, Object>> events(@RequestParam(required = false) Integer limit) {
+        return buildEvents(limit == null ? dashboard.getEventsDefaultLimit() : limit);
     }
 
     /** 查询 Agent 当前状态及记忆信息。 */
@@ -176,8 +189,8 @@ public class DashboardController {
      * @return Agent 数据列表
      */
     @GetMapping("/agents")
-    public List<Map<String, Object>> agents(@RequestParam(defaultValue = "8") int memoryLimit) {
-        return buildAgents(memoryLimit);
+    public List<Map<String, Object>> agents(@RequestParam(required = false) Integer memoryLimit) {
+        return buildAgents(memoryLimit == null ? dashboard.getDefaultMemoryLimit() : memoryLimit);
     }
 
     /** 查询当前运行指标。 */
@@ -358,7 +371,7 @@ public class DashboardController {
     private Map<String, Object> buildMetrics() {
         Map<String, Object> metrics = new HashMap<>();
         metrics.put("eventSubscriberCount", worldEngine.getEventBus().getSubscriberCount());
-        metrics.put("eventHistorySize", worldEngine.getEventBus().getEventHistory(10000).size());
+        metrics.put("eventHistorySize", worldEngine.getEventBus().getEventHistory(runtime.getEventScanLimit()).size());
         metrics.put("agentCount", worldEngine.getWorld().getAgents().size());
         metrics.put("currentTick", worldEngine.getCurrentTick());
         metrics.put("serverTime", Instant.now());

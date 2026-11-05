@@ -11,23 +11,24 @@ import java.util.Map;
  * 基于 {@link WorldState} 快照的 {@link Perception} 实现（docs §17.3）。
  *
  * <p>只读：全部查询都不修改任何状态；持有的 worldState 是一次 tick 的世界快照。
- * 感知范围 {@value #PERCEPTION_RANGE}（曼哈顿距离），后续可配置。</p>
+ * 感知范围（曼哈顿距离）由构造注入，来自 {@code virtual-ai-box.runtime.perception-range}。</p>
  */
 public class WorldPerception implements Perception {
 
     /** 感知范围（曼哈顿距离）：超过该距离视为"感知不到"。 */
-    public static final int PERCEPTION_RANGE = 5;
+    private final int perceptionRange;
 
     private final Agent selfAgent;
     private final WorldState worldState;
 
-    private WorldPerception(Agent selfAgent, WorldState worldState) {
+    private WorldPerception(Agent selfAgent, WorldState worldState, int perceptionRange) {
         this.selfAgent = selfAgent;
         this.worldState = worldState;
+        this.perceptionRange = perceptionRange;
     }
 
-    public static WorldPerception of(Agent self, WorldState worldState) {
-        return new WorldPerception(self, worldState);
+    public static WorldPerception of(Agent self, WorldState worldState, int perceptionRange) {
+        return new WorldPerception(self, worldState, perceptionRange);
     }
 
     @Override
@@ -43,7 +44,7 @@ public class WorldPerception implements Perception {
             return Integer.MAX_VALUE;
         }
         int d = Math.abs(me.getX() - o.getX()) + Math.abs(me.getY() - o.getY());
-        return d <= PERCEPTION_RANGE ? d : Integer.MAX_VALUE;
+        return d <= perceptionRange ? d : Integer.MAX_VALUE;
     }
 
     @Override
@@ -63,7 +64,7 @@ public class WorldPerception implements Perception {
             }
             AgentState o = e.getValue();
             int d = Math.abs(me.getX() - o.getX()) + Math.abs(me.getY() - o.getY());
-            if (d <= PERCEPTION_RANGE && d < bestDist) {
+            if (d <= perceptionRange && d < bestDist) {
                 bestDist = d;
                 best = new AgentRefValue(e.getKey(), o.getName());
             }
@@ -83,7 +84,7 @@ public class WorldPerception implements Perception {
         if (dx == 0 && dy == 0) {
             return null;
         }
-        if (Math.abs(dx) + Math.abs(dy) > PERCEPTION_RANGE) {
+        if (Math.abs(dx) + Math.abs(dy) > perceptionRange) {
             return null;
         }
         // 按主轴判断方向

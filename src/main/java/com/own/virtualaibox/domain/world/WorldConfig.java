@@ -7,11 +7,19 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import com.own.virtualaibox.domain.agent.PersonalityProfile;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 世界运行配置：尺寸、默认居民与初始化参数。 */
+/**
+ * 世界运行配置：尺寸、默认居民（含人格）与初始化参数。
+ *
+ * <p>配置主源是 application.yml 的 {@code virtual-ai-box.world} 段；
+ * 下面字段初始化器里的默认值是 yml 缺失时的代码兜底，两者应保持一致
+ * （网格尺寸、默认居民坐标与人格）。</p>
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -29,18 +37,24 @@ public class WorldConfig {
             "trading", false));
     private List<WorldItemDefinition> items = List.of();
     private List<DefaultResident> defaultResidents = List.of(
-            new DefaultResident("Alice", 6, 2),
-            new DefaultResident("Bob", 18, 17));
+            new DefaultResident("Alice", 6, 2, new PersonalityProfile(
+                    "探索者",
+                    "好奇、谨慎",
+                    "温和，喜欢先观察再表达",
+                    "了解小镇并寻找新地点",
+                    "重视事实和互相帮助",
+                    "只知道已经感知到或记忆中的世界信息")),
+            new DefaultResident("Bob", 18, 17, new PersonalityProfile(
+                    "社区居民",
+                    "热情、主动",
+                    "直接、友好，愿意发起对话",
+                    "认识其他居民并建立联系",
+                    "重视承诺和社区关系",
+                    "只知道已经感知到或记忆中的世界信息")));
 
+    /** 代码兜底默认配置（无参构造的字段初始化器是唯一默认值来源）。 */
     public static WorldConfig defaultConfig() {
-        return new WorldConfig("VirtualAIBox Town", 37, 37, new LinkedHashMap<>(Map.of(
-                "movement", true,
-                "socialInteraction", true,
-                "itemSpawning", true,
-                "combat", false,
-                "trading", false)), List.of(), List.of(
-                new DefaultResident("Alice", 6, 2),
-                new DefaultResident("Bob", 18, 17)));
+        return new WorldConfig();
     }
 
     public void validate() {
@@ -65,6 +79,14 @@ public class WorldConfig {
                 throw new IllegalArgumentException("world item counts and weights must not be negative");
             }
         });
+        if (defaultResidents == null) {
+            defaultResidents = List.of();
+        }
+        defaultResidents.forEach(resident -> {
+            if (resident == null || resident.getName() == null || resident.getName().isBlank()) {
+                throw new IllegalArgumentException("default residents require non-blank name");
+            }
+        });
     }
 
     @Data
@@ -74,5 +96,11 @@ public class WorldConfig {
         private String name;
         private int x;
         private int y;
+        /** 该居民初始化时的人格；null 时由世界引擎回落到配置的通用兜底人格。 */
+        private PersonalityProfile personality;
+
+        public DefaultResident(String name, int x, int y) {
+            this(name, x, y, null);
+        }
     }
 }

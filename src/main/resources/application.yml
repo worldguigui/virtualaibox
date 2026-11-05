@@ -35,9 +35,63 @@ virtual-ai-box:
       - name: Alice
         x: 6
         y: 2
+        personality:
+          role: 探索者
+          temperament: 好奇、谨慎
+          speaking-style: 温和，喜欢先观察再表达
+          motivations: 了解小镇并寻找新地点
+          values: 重视事实和互相帮助
+          knowledge-boundary: 只知道已经感知到或记忆中的世界信息
       - name: Bob
         x: 18
         y: 17
+        personality:
+          role: 社区居民
+          temperament: 热情、主动
+          speaking-style: 直接、友好，愿意发起对话
+          motivations: 认识其他居民并建立联系
+          values: 重视承诺和社区关系
+          knowledge-boundary: 只知道已经感知到或记忆中的世界信息
+
+  # 运行时参数（Java 侧默认值见 RuntimeProperties，二者保持一致）
+  runtime:
+    perception-range: 5          # 感知范围（曼哈顿距离）
+    meet-distance: 1.5           # 相遇距离（欧氏距离，格）
+    event-history-size: 210      # 事件历史环形缓冲上限
+    event-scan-limit: 10000      # 事件历史扫描上限（须 >= event-history-size）
+    max-steps-per-tick: 500      # 单 tick 单台 SECD 机器步进预算
+    max-handler-steps: 200       # onMeet 对话处理器步数预算
+    secd-max-steps: 10000        # SECD 总步数上限（防无限归约）
+    default-plan-length: 3       # 内置默认计划路径长度（tick 数）
+    move-clamp: 1                # LLM 决策/随机降级的单轴移动钳制（格）
+    convergence:
+      stuck-ticks: 3             # 连续原地不动判定卡死
+      converged-ticks: 5         # 世界连续无变化判定收敛
+      max-cycle-period: 8        # 位置周期检测上限
+      history-size: 32           # 每 Agent 位置历史长度
+      max-d-stack-depth: 50      # D 栈深度告警阈值
+    default-personality:         # 居民未配置人格时的通用兜底
+      role: 居民
+      temperament: 平和、谨慎
+      speaking-style: 简洁、礼貌
+      motivations: 在小镇中生活并理解周围环境
+      values: 重视安全和真实经历
+      knowledge-boundary: 只知道已经感知到或记忆中的世界信息
+
+  # LLM 提示词：仅 intro/task 两个"政策文本"模板外置于 classpath:prompts/decision/*.txt
+  # （PromptRegistry 启动加载、缺文件即失败、首尾空白自动裁剪）；与代码结构耦合的脚手架段
+  # （状态注入/他人列表/记忆段/人格格式）是代码常量，不进配置——勿在本文件里放长提示词
+  prompt:
+    default-reason: LLM决策
+    fallback-reason: "Fallback: Random movement"
+
+  # Dashboard API 默认值
+  dashboard:
+    default-event-limit: 30      # GET /api/dashboard 事件条数默认值
+    default-memory-limit: 8      # GET /api/dashboard 每居民记忆条数默认值
+    agent-memory-limit: 8        # step/addAgent/update 等响应携带的记忆条数
+    state-agents-limit: 3        # GET /api/dashboard/state 携带的居民数
+    events-default-limit: 50     # GET /api/dashboard/events 条数默认值
 
 langchain4j:
   open-ai:
