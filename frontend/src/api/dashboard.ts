@@ -1,5 +1,5 @@
 import { request } from './client'
-import type { Agent, AgentCreateRequest, DashboardData, StepResult, WorldConfig, WorldInfo } from '../types'
+import type { Agent, AgentCreateRequest, DashboardData, StepResult, WorldConfig, WorldInfo, WorldItem, SocialRelation, TownMessage, TownQuest } from '../types'
 
 /** 拉取仪表盘主数据。 */
 export function fetchDashboard(eventLimit: number, memoryLimit: number) {
@@ -46,4 +46,28 @@ export function updateWorldConfig(input: WorldConfig) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
+}
+
+export interface TownRuntime {
+  items: WorldItem[]
+  relationships: SocialRelation[]
+  messages: TownMessage[]
+  quests: TownQuest[]
+  agents: Agent[]
+}
+
+export function fetchTownRuntime() {
+  return request<TownRuntime>('/api/dashboard/town/runtime')
+}
+
+export function spawnTownItem(input: { definitionId: string; x: number; y: number; quantity: number }) {
+  return request<{ item: WorldItem; runtime: TownRuntime }>('/api/dashboard/town/items/spawn', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
+}
+
+export function sendTownMessage(input: { fromAgentId: string; toAgentId: string; content: string }) {
+  return request<{ message: TownMessage; runtime: TownRuntime }>('/api/dashboard/town/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
+}
+
+export function createTownQuest(input: { title: string; description: string; reward: number }) {
+  return request<{ quest: TownQuest; runtime: TownRuntime }>('/api/dashboard/town/quests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) })
 }

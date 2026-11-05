@@ -10,6 +10,7 @@ export interface PageDataProps {
   onCreateAgent: (input: AgentCreateRequest) => Promise<void>
   onUpdateAgent: (agentId: string, input: AgentCreateRequest) => Promise<void>
   onUpdateWorldConfig: (input: WorldConfig) => Promise<void>
+  onRefresh: () => void
 }
 
 export interface SimulationPageProps extends PageDataProps {

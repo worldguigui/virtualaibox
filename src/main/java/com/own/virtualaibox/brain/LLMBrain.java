@@ -5,6 +5,7 @@ import java.util.Random;
 
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.own.virtualaibox.domain.action.MoveAction;
@@ -38,8 +39,8 @@ public class LLMBrain {
             String response = callLLM(prompt);
             MoveAction action = parseResponse(response, agent.getId());
             
-            log.info("LLMBrain: Decision made - move ({}, {}), reason: {}",
-                    Integer.valueOf(action.getDeltaX()), Integer.valueOf(action.getDeltaY()), action.getReason());
+            log.info("LLMBrain: Decision made - move (" + action.getDeltaX() + ", "
+                    + action.getDeltaY() + "), reason: " + action.getReason());
             return action;
             
         } catch (Exception e) {
@@ -52,8 +53,12 @@ public class LLMBrain {
     private String buildPrompt(Agent agent, WorldState worldState) {
         StringBuilder sb = new StringBuilder();
         
-        sb.append("你是一个AI智能体，正在一个37x37的网格世界中行动。你现在的首要任务是与其他Agent会合。\n");
+        sb.append("你正在一个由世界设定约束的小镇中行动。你现在的首要任务是探索、生活并完成有意义的行动。\n");
         sb.append("你有记忆能力，可以基于过去的经历做出更好的决策。\n\n");
+        sb.append("=== 世界描述与规则 ===\n");
+        sb.append(worldState.getWorldDescription()).append("\n");
+        sb.append("规则：").append(worldState.getRules()).append("\n");
+        sb.append("可用资源定义：").append(worldState.getItemDefinitions()).append("\n\n");
         
         sb.append("=== 当前状态 ===\n");
         sb.append("- 当前时间tick：").append(worldState.getTick()).append("\n");
@@ -130,7 +135,7 @@ public class LLMBrain {
             
             return action;
             
-        } catch (Exception e) {
+        } catch (JsonProcessingException | NullPointerException | IllegalArgumentException e) {
             log.warn("LLMBrain: Failed to parse LLM response, using random fallback", e);
             return randomDecision(agentId);
         }

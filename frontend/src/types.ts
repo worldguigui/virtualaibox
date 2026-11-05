@@ -3,11 +3,52 @@
 /** 世界网格和 Agent 数量摘要。 */
 export interface WorldInfo {
   name: string
+  worldDescription: string
   width: number
   height: number
   agentCount: number
   rules: Record<string, boolean>
   items: WorldItemDefinition[]
+  itemInstances: WorldItem[]
+  relationships: SocialRelation[]
+  messages: TownMessage[]
+  quests: TownQuest[]
+}
+
+export interface WorldItem {
+  id: string
+  definitionId: string
+  x: number
+  y: number
+  ownerId: string | null
+  quantity: number
+}
+
+export interface SocialRelation {
+  agentId: string
+  otherAgentId: string
+  trust: number
+  affinity: number
+  interactions: number
+  status: string
+}
+
+export interface TownMessage {
+  id: string
+  fromAgentId: string
+  toAgentId: string
+  content: string
+  tick: number
+  createdAt: string
+}
+
+export interface TownQuest {
+  id: string
+  title: string
+  description: string
+  assigneeId: string | null
+  reward: number
+  status: string
 }
 
 export interface WorldItemDefinition {
@@ -21,6 +62,7 @@ export interface WorldItemDefinition {
 
 export interface WorldConfig {
   name: string
+  worldDescription: string
   width: number
   height: number
   rules: Record<string, boolean>
@@ -87,6 +129,8 @@ export interface Agent {
   x: number
   y: number
   active: boolean
+  coins: number
+  inventory: string[]
   eventHistorySize: number
   memoryStats: MemoryStats | null
   memorySummary: string

@@ -1,5 +1,15 @@
 package com.own.virtualaibox.mind;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import com.own.virtualaibox.behaviordsl.BehaviorProgram;
 import com.own.virtualaibox.behaviordsl.BehaviorRegistry;
 import com.own.virtualaibox.brain.LLMBrain;
@@ -11,15 +21,6 @@ import com.own.virtualaibox.effect.Effect;
 import com.own.virtualaibox.secd.InstApp;
 import com.own.virtualaibox.secd.InstConst;
 import com.own.virtualaibox.secd.value.AgentRefValue;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 心智控制器：一个 tick 内驱动所有 Agent 的 SECD 运行时，汇总副作用。
@@ -103,6 +104,6 @@ public class MindController {
         for (Agent agent : world.getAgents()) {
             agentStates.put(agent.getId(), agent.getState());
         }
-        return new WorldState(tick, agentStates);
+        return new WorldState(tick, agentStates, world.getWorldDescription(), world.getRules(), world.getItems());
     }
 }

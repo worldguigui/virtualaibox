@@ -1,10 +1,10 @@
 package com.own.virtualaibox.domain.memory;
 
+import java.time.Instant;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 /**
  * 记忆条目
@@ -48,7 +48,8 @@ public class MemoryEntry {
     // 相关的其他Agent ID
     private String relatedAgentId;
     
-    enum MemoryType {
+    /** 记忆分类，作为 MemoryStore 查询和持久化映射的稳定类型。 */
+    public enum MemoryType {
         // 观察记忆：看到了什么
         OBSERVATION,
         

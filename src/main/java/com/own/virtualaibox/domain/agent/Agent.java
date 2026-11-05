@@ -28,6 +28,12 @@ public class Agent implements EventListener {
     /** Agent是否活跃 */
     private boolean active = true;
 
+    /** 可用于经济玩法的货币余额。 */
+    private int coins = 100;
+
+    /** 持有的世界物品实例 ID。 */
+    private List<String> inventory = new ArrayList<>();
+
     /** 保留旧的六参数构造方式，并为居民创建默认人格。 */
     public Agent(String id, String name, AgentState state, AgentMemory memory,
                  List<String> eventHistory, boolean active) {

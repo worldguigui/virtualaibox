@@ -88,6 +88,7 @@ export default function App() {
     onCreateAgent: addAgent,
     onUpdateAgent: updateAgent,
     onUpdateWorldConfig: updateWorldConfig,
+    onRefresh: () => void refresh(),
   }
   const simulationProps = {
     ...pageData,

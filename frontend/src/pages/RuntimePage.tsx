@@ -2,9 +2,10 @@ import { MindViewer } from '../components/MindViewer'
 import { StatusPanel } from '../components/StatusPanel'
 import type { PageDataProps } from './pageTypes'
 import { BilingualText } from '../components/i18n'
+import { TownActionsPanel } from '../components/TownActionsPanel'
 
 /** 汇总执行内核、收敛检测和当前 Agent 心智状态，作为运行诊断入口。 */
-export function RuntimePage({ data, visibleAgents, focusedAgent }: PageDataProps) {
+export function RuntimePage({ data, visibleAgents, focusedAgent, onRefresh }: PageDataProps) {
   const memoryCoverage = `${visibleAgents.filter((agent) => agent.memoryStats).length}/${visibleAgents.length || 1} agents`
 
   return (
@@ -21,6 +22,7 @@ export function RuntimePage({ data, visibleAgents, focusedAgent }: PageDataProps
         <StatusPanel world={data?.world} metrics={data?.metrics} memoryCoverage={memoryCoverage} convergence={data?.convergence} />
         <MindViewer agentName={focusedAgent?.name ?? null} agentId={focusedAgent?.id ?? null} mind={focusedAgent?.mind ?? null} tick={data?.tick ?? 0} />
       </section>
+      <TownActionsPanel agents={visibleAgents} world={data?.world} onRefresh={onRefresh} />
       <section className="capability-panel panel">
         <div className="panel-header"><div><BilingualText primary="Runtime Capabilities" secondary="运行能力" className="panel-title" /><div className="panel-subtitle">当前后端已声明的能力入口</div></div></div>
         <div className="capability-list">

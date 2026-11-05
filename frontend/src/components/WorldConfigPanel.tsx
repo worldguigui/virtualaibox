@@ -67,6 +67,7 @@ export function WorldConfigPanel({ config, onSave }: WorldConfigPanelProps) {
 
       <div className="form-grid">
         <label className="field"><span>世界名称</span><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
+        <label className="field" style={{ gridColumn: '1 / -1' }}><span>世界描述 / 居民行动提示词</span><textarea rows={4} value={draft.worldDescription} onChange={(event) => setDraft({ ...draft, worldDescription: event.target.value })} /></label>
         <label className="field"><span>宽度</span><input type="number" min="1" max="1000" value={draft.width} onChange={(event) => setDraft({ ...draft, width: Number(event.target.value) })} /></label>
         <label className="field"><span>高度</span><input type="number" min="1" max="1000" value={draft.height} onChange={(event) => setDraft({ ...draft, height: Number(event.target.value) })} /></label>
       </div>

@@ -99,17 +99,21 @@ http://localhost:8080
 .\mvnw.cmd test
 ```
 
-> ⚠ 2026-08-22 曾出现 `AgentRuntimeTest` 3 例失败与 `contextLoads` 失败记录（其后代码有修改、未重跑测试）；当前测试状态未复核，见 `docs/consistency-audit.md` §3.4。
+> 最近一次实测：**2026-10-24 / `.\mvnw.cmd test` / 9 个测试类 75 例全部通过**（Failures / Errors / Skipped 均为 0），汇总见 `docs/architecture.md` §6.1。2026-08-22 的失败记录作为历史保留在 `docs/consistency-audit.md` §3.4。
 
 ## 文档地图
 
 ```text
 docs/
+├── README.md              # 文档地图、权威关系与维护规则（文档入口）
 ├── vision.md              # 为什么做、是什么、边界
 ├── architecture.md        # 当前架构唯一总览 / SSOT
-├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect）
-├── decisions/             # ADR-0001~0004（架构决策记录）
+├── logic-walkthrough.md   # 一次运行的全链路追踪 + 类职责审计
+├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect / api / personality）
+├── decisions/             # ADR-0001~0004（架构决策记录，只增不改）
+├── development/           # AI_WORKFLOW.md（Agent 协作规范）、KNOWLEDGE_MAP.md（个人知识地图）
+├── tasks/                 # 任务记录与设计方案（active / completed）
 ├── changelog.md           # P0-P6 历史演进
-├── consistency-audit.md   # 文档-代码一致性审计记录
+├── consistency-audit.md   # 问题台账（含 2026-09-10 审计快照）
 └── archive/               # 历史文档（只读）：design-v0.3-frozen.md、logs.md
 ```

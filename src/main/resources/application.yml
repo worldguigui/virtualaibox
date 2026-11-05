@@ -21,6 +21,7 @@ spring:
 virtual-ai-box:
   world:
     name: VirtualAIBox Town
+    world-description: "一个居民会探索、交流、收集资源并完成任务的小镇。优先遵守世界规则，保护自身和社区。"
     width: 37
     height: 37
     rules:
@@ -29,7 +30,19 @@ virtual-ai-box:
       itemSpawning: true
       combat: false
       trading: false
-    items: []
+    items:
+      - id: berry
+        name: 野浆果
+        type: food
+        max-count: 12
+        spawn-weight: 5
+        description: 恢复体力的食物
+      - id: wood
+        name: 木材
+        type: material
+        max-count: 12
+        spawn-weight: 3
+        description: 建造和交易材料
     default-residents:
       - name: Alice
         x: 6

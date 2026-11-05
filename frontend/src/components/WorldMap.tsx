@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { Agent, WorldInfo } from '../types'
+import type { Agent, WorldInfo, WorldItem } from '../types'
 import { BilingualText } from './i18n'
 
 /** 世界地图组件的输入属性。 */
@@ -23,10 +23,11 @@ interface DrawOptions {
   width: number
   height: number
   cellSize: number
+  itemInstances: WorldItem[]
 }
 
 /** 按给定世界尺寸和 Agent 状态绘制网格地图。 */
-function drawWorld(ctx: CanvasRenderingContext2D, { agents, tick, selectedAgentId, width, height, cellSize }: DrawOptions) {
+function drawWorld(ctx: CanvasRenderingContext2D, { agents, tick, selectedAgentId, width, height, cellSize, itemInstances }: DrawOptions) {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
   const gridColor = 'rgba(75, 91, 70, 0.16)'
@@ -49,6 +50,16 @@ function drawWorld(ctx: CanvasRenderingContext2D, { agents, tick, selectedAgentI
     ctx.lineWidth = y % 5 === 0 ? 1.2 : 0.7
     ctx.stroke()
   }
+
+  itemInstances.filter((item) => !item.ownerId).forEach((item) => {
+    const x = item.x * cellSize + cellSize / 2
+    const y = item.y * cellSize + cellSize / 2
+    ctx.fillStyle = '#d6a84f'
+    ctx.fillRect(x - 4, y - 4, 8, 8)
+    ctx.strokeStyle = '#694f24'
+    ctx.lineWidth = 1
+    ctx.strokeRect(x - 4, y - 4, 8, 8)
+  })
 
   const occupied = new Map<string, number>()
   agents.forEach((agent) => {
@@ -129,7 +140,7 @@ export function WorldMap({ agents, tick, world, selectedAgentId, status }: World
     canvas.width = width * cellSize
     canvas.height = height * cellSize
 
-    drawWorld(ctx, { agents, tick, selectedAgentId, width, height, cellSize })
+    drawWorld(ctx, { agents, tick, selectedAgentId, width, height, cellSize, itemInstances: world?.itemInstances ?? [] })
   }, [agents, tick, world, selectedAgentId])
 
   return (

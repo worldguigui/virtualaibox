@@ -29,7 +29,9 @@ import com.own.virtualaibox.domain.event.events.TickEndedEvent;
 import com.own.virtualaibox.domain.event.events.TickStartedEvent;
 import com.own.virtualaibox.domain.memory.AgentMemory;
 import com.own.virtualaibox.domain.memory.MemoryEntry;
+import com.own.virtualaibox.domain.world.SocialRelation;
 import com.own.virtualaibox.domain.world.WorldConfig;
+import com.own.virtualaibox.domain.world.WorldItem;
 import com.own.virtualaibox.mind.AgentRuntime;
 import com.own.virtualaibox.mind.MindController;
 import com.own.virtualaibox.monitor.ConvergenceMonitor;
@@ -116,11 +118,13 @@ public class DashboardController {
     }
 
     @GetMapping("/world")
+    /** 读取当前世界设计配置。 */
     public WorldConfig worldConfig() {
         return worldEngine.getWorldConfig();
     }
 
     @PutMapping("/world")
+    /** 原子替换世界设计配置，非法请求由统一异常处理器转为 400。 */
     public Map<String, Object> updateWorld(@RequestBody WorldConfig request) {
         WorldConfig config = worldEngine.updateWorldConfig(request);
         Map<String, Object> result = new HashMap<>();
@@ -129,6 +133,62 @@ public class DashboardController {
         result.put("worldConfig", config);
         result.put("agents", buildAgents(8));
         return result;
+    }
+
+    @GetMapping("/town/runtime")
+    /** 返回资源实例、关系、消息、任务和居民的运行态快照。 */
+    public Map<String, Object> townRuntime() {
+        return runtimeSnapshot();
+    }
+
+    @PostMapping("/town/items/spawn")
+    public Map<String, Object> spawnItem(@RequestBody ItemRequest request) {
+        WorldItem item = worldEngine.spawnItem(request.definitionId(), request.x(), request.y(), request.quantity());
+        return Map.of("item", item, "runtime", runtimeSnapshot());
+    }
+
+    @PostMapping("/town/items/{itemId}/pickup")
+    public Map<String, Object> pickupItem(@PathVariable String itemId, @RequestBody AgentCommand request) {
+        return Map.of("item", worldEngine.pickupItem(request.agentId(), itemId), "runtime", runtimeSnapshot());
+    }
+
+    @PostMapping("/town/messages")
+    public Map<String, Object> sendMessage(@RequestBody MessageRequest request) {
+        return Map.of("message", worldEngine.sendMessage(request.fromAgentId(), request.toAgentId(), request.content()),
+                "runtime", runtimeSnapshot());
+    }
+
+    @PostMapping("/town/relations")
+    public Map<String, Object> updateRelation(@RequestBody RelationRequest request) {
+        SocialRelation relation = worldEngine.updateRelation(request.agentId(), request.otherAgentId(), request.trustDelta(), request.affinityDelta());
+        return Map.of("relation", relation, "runtime", runtimeSnapshot());
+    }
+
+    @PostMapping("/town/quests")
+    public Map<String, Object> createQuest(@RequestBody QuestRequest request) {
+        return Map.of("quest", worldEngine.createQuest(request.title(), request.description(), request.reward()), "runtime", runtimeSnapshot());
+    }
+
+    @PostMapping("/town/quests/{questId}/assign")
+    public Map<String, Object> assignQuest(@PathVariable String questId, @RequestBody AgentCommand request) {
+        return Map.of("quest", worldEngine.assignQuest(questId, request.agentId()), "runtime", runtimeSnapshot());
+    }
+
+    @PostMapping("/town/quests/{questId}/complete")
+    public Map<String, Object> completeQuest(@PathVariable String questId) {
+        return Map.of("quest", worldEngine.completeQuest(questId), "runtime", runtimeSnapshot());
+    }
+
+    @PostMapping("/town/trades")
+    public Map<String, Object> trade(@RequestBody TradeRequest request) {
+        worldEngine.trade(request.buyerId(), request.sellerId(), request.price());
+        return runtimeSnapshot();
+    }
+
+    @PostMapping("/town/combat")
+    public Map<String, Object> combat(@RequestBody CombatRequest request) {
+        worldEngine.combat(request.attackerId(), request.defenderId(), request.damage());
+        return runtimeSnapshot();
     }
 
     /** 推进世界一步并返回最新 Agent 状态。 */
@@ -205,11 +265,33 @@ public class DashboardController {
         world.put("width", worldEngine.getWorld().getWidth());
         world.put("height", worldEngine.getWorld().getHeight());
         world.put("name", worldEngine.getWorld().getName());
+        world.put("worldDescription", worldEngine.getWorld().getWorldDescription());
         world.put("rules", worldEngine.getWorld().getRules());
         world.put("items", worldEngine.getWorld().getItems());
+        world.put("itemInstances", worldEngine.getWorld().getItemInstances());
+        world.put("relationships", worldEngine.getWorld().getRelationships());
+        world.put("messages", worldEngine.getWorld().getMessages());
+        world.put("quests", worldEngine.getWorld().getQuests());
         world.put("agentCount", worldEngine.getWorld().getAgents().size());
         return world;
     }
+
+    private Map<String, Object> runtimeSnapshot() {
+        return Map.of(
+                "items", worldEngine.getWorld().getItemInstances(),
+                "relationships", worldEngine.getWorld().getRelationships(),
+                "messages", worldEngine.getWorld().getMessages(),
+                "quests", worldEngine.getWorld().getQuests(),
+                "agents", buildAgents(3));
+    }
+
+    public record ItemRequest(String definitionId, int x, int y, int quantity) {}
+    public record AgentCommand(String agentId) {}
+    public record MessageRequest(String fromAgentId, String toAgentId, String content) {}
+    public record RelationRequest(String agentId, String otherAgentId, int trustDelta, int affinityDelta) {}
+    public record QuestRequest(String title, String description, int reward) {}
+    public record TradeRequest(String buyerId, String sellerId, int price) {}
+    public record CombatRequest(String attackerId, String defenderId, int damage) {}
 
     /** 构建所有 Agent 的详细信息。 */
     /**
@@ -236,6 +318,8 @@ public class DashboardController {
         map.put("x", agent.getState().getX());
         map.put("y", agent.getState().getY());
         map.put("active", agent.isActive());
+        map.put("coins", agent.getCoins());
+        map.put("inventory", agent.getInventory());
         map.put("eventHistorySize", agent.getEventHistory() == null ? 0 : agent.getEventHistory().size());
 
         // 返回该 Agent 的 SECD 运行时状态（无运行时则为 null）
