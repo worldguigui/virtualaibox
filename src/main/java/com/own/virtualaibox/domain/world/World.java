@@ -41,7 +41,6 @@ public class World {
         this.width = config.getWidth();
         this.height = config.getHeight();
         this.name = config.getName();
-        this.worldDescription = config.getWorldDescription();
         this.rules = new java.util.LinkedHashMap<>(config.getRules());
         this.items = new ArrayList<>(config.getItems());
     }
@@ -56,7 +55,6 @@ public class World {
         this.width = config.getWidth();
         this.height = config.getHeight();
         this.name = config.getName();
-        this.worldDescription = config.getWorldDescription();
         this.rules = new java.util.LinkedHashMap<>(config.getRules());
         this.items = new ArrayList<>(config.getItems());
     }
