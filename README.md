@@ -82,6 +82,25 @@ http://localhost:8080
 
 > 实施顺序必须遵守：先修正更新逻辑以 `agentId` 为唯一键；再补世界配置层；最后将默认居民生成逻辑改为配置驱动；之后再推进下一阶段功能。
 
+## 配置总览（SSOT：后端 `application.yml`）
+
+> 决策背景与影响见 [`docs/decisions/ADR-0005-config-extraction.md`](docs/decisions/ADR-0005-config-extraction.md)。
+
+| 配置段 | 内容 | 消费方 |
+|---|---|---|
+| `virtual-ai-box.world` | 世界名、尺寸（37×37）、规则、物品、默认居民（坐标 + 人格） | `WorldConfig` → `WorldEngine` |
+| `virtual-ai-box.runtime` | 感知范围(5)、相遇距离(1.5)、事件历史上限(210)、SECD/tick 步数预算、默认计划长度、移动钳制、收敛检测阈值、通用兜底人格 | `RuntimeProperties` → MindController/TickSchedule/EventBus/ConvergenceMonitor 等 |
+| `virtual-ai-box.prompt` | 仅短标量（默认/降级理由）；提示词只外置 `intro.txt`/`task.txt` 两个"政策文本"到 `src/main/resources/prompts/decision/`（`PromptRegistry` 启动加载、缺文件即失败、首尾空白自动裁剪）；注入类脚手架段是代码常量，不进配置（ADR-0005 三问检验） | `PromptProperties` + `PromptRegistry` → `LLMBrain` |
+| `virtual-ai-box.dashboard` | REST 默认值（事件/记忆条数、轻量快照居民数） | `DashboardProperties` → `DashboardController` |
+| `spring.virtual-clock` | 虚拟时钟初始刻度/步长/元时间 | `VirtualClockProperties` |
+| `llm.*` + `langchain4j.*` | LLM 平台选择与密钥（`default.yml`/`secrets.yml`） | langchain4j starter |
+
+**前后端一致性约定**：网格尺寸等世界数据以后端 API 返回为准；前端 `frontend/src/config.ts`
+只保留显示兜底值（须与后端默认值一致），坐标上限从 `worldConfig` 动态解析；人格空字段回落
+由后端三级解析唯一承担，前端只裁剪不预填（避免遮蔽 `runtime.default-personality`）。每个
+配置类的 Java 默认值与 yml 保持一致（yml 是主源），一致性由 `ConfigDefaultsConsistencyTest`
+（Binder 容器外绑定比对）机制化校验。
+
 ## 核心概念速览
 
 | 概念 | 一句话 | 权威文档 |
@@ -99,21 +118,17 @@ http://localhost:8080
 .\mvnw.cmd test
 ```
 
-> 最近一次实测：**2026-10-24 / `.\mvnw.cmd test` / 9 个测试类 75 例全部通过**（Failures / Errors / Skipped 均为 0），汇总见 `docs/architecture.md` §6.1。2026-08-22 的失败记录作为历史保留在 `docs/consistency-audit.md` §3.4。
+> ⚠ 2026-08-22 曾出现 `AgentRuntimeTest` 3 例失败与 `contextLoads` 失败记录（其后代码有修改、未重跑测试）；当前测试状态未复核，见 `docs/consistency-audit.md` §3.4。
 
 ## 文档地图
 
 ```text
 docs/
-├── README.md              # 文档地图、权威关系与维护规则（文档入口）
 ├── vision.md              # 为什么做、是什么、边界
 ├── architecture.md        # 当前架构唯一总览 / SSOT
-├── logic-walkthrough.md   # 一次运行的全链路追踪 + 类职责审计
-├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect / api / personality）
-├── decisions/             # ADR-0001~0004（架构决策记录，只增不改）
-├── development/           # AI_WORKFLOW.md（Agent 协作规范）、KNOWLEDGE_MAP.md（个人知识地图）
-├── tasks/                 # 任务记录与设计方案（active / completed）
+├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect）
+├── decisions/             # ADR（架构决策记录）：0005=配置参数提取（0001~0004 尚未落盘）
 ├── changelog.md           # P0-P6 历史演进
-├── consistency-audit.md   # 问题台账（含 2026-09-10 审计快照）
+├── consistency-audit.md   # 文档-代码一致性审计记录
 └── archive/               # 历史文档（只读）：design-v0.3-frozen.md、logs.md
 ```

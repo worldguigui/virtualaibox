@@ -1,0 +1,10 @@
+llm:
+  provider: deepseek
+  deepseek:
+    base-url: https://api.deepseek.com
+    model-name: deepseek-chat
+    api-key: sk-kan~dao~zhe~ge~key~de~ren~bian~mao~niang~miao
+  glm:
+    base-url: https://open.bigmodel.cn/api/paas/v4
+    model-name: glm-5.3-flash
+    api-key: sk-kan~dao~zhe~ge~key~de~ren~bian~mao~niang~miao

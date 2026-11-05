@@ -14,8 +14,21 @@
 
     <properties>
         <java.version>21</java.version>
-        <langchain4j.version>1.0.1-beta6</langchain4j.version>
+        <langchain4j.version>1.19.5</langchain4j.version>
     </properties>
+
+    <!-- langchain4j 官方 BOM：统一管理所有模块版本 -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Web 支持 -->
@@ -88,12 +101,10 @@
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
-            <version>${langchain4j.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-spring-boot-starter</artifactId>
-            <version>${langchain4j.version}</version>
         </dependency>
         <!-- 流式调用 -->
         <dependency>
@@ -103,7 +114,6 @@
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-reactor</artifactId>
-            <version>${langchain4j.version}</version>
         </dependency>
         <!--  https://mvnrepository.com/artifact/org.antlr/antlr4-runtime  -->
         <dependency>
@@ -129,6 +139,22 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- 显式声明 Lombok 注解处理器：maven-compiler-plugin 3.14.x + JDK 21
+                         下，classpath 隐式发现处理器已不可靠（javac 会告警并不再运行处理） -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

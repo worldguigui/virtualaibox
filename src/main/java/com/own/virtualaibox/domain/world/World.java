@@ -23,7 +23,7 @@ public class World {
     private List<TownQuest> quests = new ArrayList<>();
 
     public World() {
-        this(37, 37);
+        this(WorldConfig.defaultConfig());
     }
 
     public World(int width, int height) {

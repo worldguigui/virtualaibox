@@ -19,6 +19,7 @@ import com.own.virtualaibox.effect.Effect;
 import com.own.virtualaibox.executor.EffectExecutor;
 import com.own.virtualaibox.mind.MindController;
 import com.own.virtualaibox.monitor.ConvergenceMonitor;
+import com.own.virtualaibox.properties.RuntimeProperties;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,6 +35,8 @@ public class TickSchedule {
     private final EffectExecutor effectExecutor;
     private final EventBus eventBus;
     private final ConvergenceMonitor convergenceMonitor;
+    /** 运行参数（相遇距离、事件扫描上限）。 */
+    private final RuntimeProperties runtime;
 
     /** 当前已处于相遇状态的 pair（id1|id2 排序键），用于"首次相遇才对话"去抖。 */
     private final Set<String> activeMeetings = ConcurrentHashMap.newKeySet();
@@ -45,13 +48,16 @@ public class TickSchedule {
      * @param effectExecutor 将副作用应用到世界的执行器
      * @param eventBus 发布 tick 和交互事件的事件总线
      * @param convergenceMonitor 检测世界及 Agent 收敛状态的监视器
+     * @param runtime 运行参数配置
      */
     public TickSchedule(MindController mindController, EffectExecutor effectExecutor,
-                        EventBus eventBus, ConvergenceMonitor convergenceMonitor) {
+                        EventBus eventBus, ConvergenceMonitor convergenceMonitor,
+                        RuntimeProperties runtime) {
         this.mindController = mindController;
         this.effectExecutor = effectExecutor;
         this.eventBus = eventBus;
         this.convergenceMonitor = convergenceMonitor;
+        this.runtime = runtime;
     }
 
     /**
@@ -156,8 +162,8 @@ public class TickSchedule {
 
                 double distance = calculateDistance(agent1, agent2);
 
-                // 如果距离 <= 1.5 格，视为相遇
-                if (distance <= 1.5) {
+                // 距离 <= meet-distance 格视为相遇（virtual-ai-box.runtime.meet-distance）
+                if (distance <= runtime.getMeetDistance()) {
                     String pairKey = pairKey(agent1, agent2);
                     currentMeets.add(pairKey);
                     publishAgentMet(tick, agent1, agent2, distance);
@@ -223,7 +229,7 @@ public class TickSchedule {
         event.setPriority(1);  // 最低优先级
 
         // 获取事件历史中本Tick的事件数
-        int eventCount = (int) eventBus.getEventHistory(1000).stream()
+        int eventCount = (int) eventBus.getEventHistory(runtime.getEventScanLimit()).stream()
                 .filter(e -> e.getTick() == tick)
                 .count();
 

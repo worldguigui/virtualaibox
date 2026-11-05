@@ -48,7 +48,7 @@ class AgentRuntimeTest {
     /** 固定返回向东 (1,0) 的假预言机。 */
     private static class FakeBrain extends LLMBrain {
         FakeBrain() {
-            super(null); // 不接真实 ChatModel；所有方法被重写，不会触发网络调用
+            super(null, com.own.virtualaibox.properties.PromptProperties.defaults(), com.own.virtualaibox.properties.RuntimeProperties.defaults()); // 不接真实 ChatModel；所有方法被重写，不会触发网络调用
         }
 
         @Override

@@ -14,6 +14,7 @@ import com.own.virtualaibox.secd.MachineState;
 import com.own.virtualaibox.secd.SECD;
 import com.own.virtualaibox.secd.value.IntValue;
 import com.own.virtualaibox.secd.value.Value;
+import com.own.virtualaibox.properties.RuntimeProperties;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,9 +39,6 @@ import java.util.Stack;
  */
 public class AgentRuntime {
 
-    /** 单 tick 单步预算：防止一条非动作指令链空转。 */
-    private static final int MAX_STEPS_PER_TICK = 500;
-
     private final Agent agent;
     /** LLM 预言机：DSL plan 的 dx/dy 由它决定（compileFromProgram 注入 E）。 */
     private final LLMBrain llmBrain;
@@ -50,6 +48,8 @@ public class AgentRuntime {
     private final DefaultPlanCompiler planCompiler;
     /** 行为程序（来自 .lambda 配置）；为 null 时回退到内置 DefaultPlanCompiler。 */
     private final BehaviorProgram behaviorProgram;
+    /** 运行参数（感知范围、步数预算、计划长度等）。 */
+    private final RuntimeProperties runtime;
 
     /** 上次编译的行为程序（C 栈快照，供可视化预览；机器 idle 时也保留）。 */
     private List<String> lastProgram = List.of();
@@ -57,16 +57,22 @@ public class AgentRuntime {
     private List<String> lastActions = List.of();
 
     public AgentRuntime(Agent agent, LLMBrain llmBrain) {
-        this(agent, llmBrain, null);
+        this(agent, llmBrain, null, RuntimeProperties.defaults());
     }
 
     public AgentRuntime(Agent agent, LLMBrain llmBrain, BehaviorProgram behaviorProgram) {
+        this(agent, llmBrain, behaviorProgram, RuntimeProperties.defaults());
+    }
+
+    public AgentRuntime(Agent agent, LLMBrain llmBrain, BehaviorProgram behaviorProgram,
+                        RuntimeProperties runtime) {
         this.agent = agent;
         this.llmBrain = llmBrain;
+        this.runtime = runtime;
         this.state = new MachineState();
         this.evaluator = new WorldOpEvaluator(agent, llmBrain);
-        this.secd = new SECD(evaluator);
-        this.planCompiler = new DefaultPlanCompiler(llmBrain);
+        this.secd = new SECD(runtime.getSecdMaxSteps(), evaluator);
+        this.planCompiler = new DefaultPlanCompiler(llmBrain, runtime.getDefaultPlanLength());
         this.behaviorProgram = behaviorProgram;
     }
 
@@ -80,7 +86,7 @@ public class AgentRuntime {
     public List<Effect> tick(WorldState worldState) {
         List<Effect> effects = new ArrayList<>();
         // 注入本 tick 的世界只读快照（供感知原语查询；同一 tick 内确定性一致）
-        evaluator.setPerception(WorldPerception.of(agent, worldState));
+        evaluator.setPerception(WorldPerception.of(agent, worldState, runtime.getPerceptionRange()));
         if (state.isTerminated()) {
             if (behaviorProgram == null) {
                 planCompiler.compileInto(state, agent, worldState);
@@ -90,7 +96,7 @@ public class AgentRuntime {
             lastProgram = snapshotInstructions();
         }
         int steps = 0;
-        while (!state.isTerminated() && steps < MAX_STEPS_PER_TICK) {
+        while (!state.isTerminated() && steps < runtime.getMaxStepsPerTick()) {
             List<Effect> stepEffects = new ArrayList<>();
             stepWithResume(stepEffects);
             steps++;

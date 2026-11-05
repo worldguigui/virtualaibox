@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createAgent, fetchDashboard, stepTick, updateAgent as updateAgentApi, updateWorldConfig as updateWorldConfigApi } from '../api/dashboard'
+import { APP_DEFAULTS } from '../config'
 import type { AgentCreateRequest, DashboardData, WorldConfig } from '../types'
 
 /** 仪表盘查询、步进和自动运行所需的配置。 */
@@ -35,7 +36,7 @@ export function useDashboard({
   const query = useQuery<DashboardData>({
     queryKey: ['dashboard', eventLimit, memoryLimit],
     queryFn: () => fetchDashboard(eventLimit, memoryLimit),
-    refetchInterval: autoRunning ? false : 5000,
+    refetchInterval: autoRunning ? false : APP_DEFAULTS.pollIntervalMs,
     refetchOnWindowFocus: false,
     retry: false,
   })

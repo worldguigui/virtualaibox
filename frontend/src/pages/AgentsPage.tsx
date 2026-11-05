@@ -21,7 +21,7 @@ export function AgentsPage({ data, visibleAgents, focusedAgent, selectedAgentId,
         </div>
         <div className="heading-stat"><strong>{visibleAgents.length}</strong><BilingualText primary="visible residents" secondary="当前可见居民" /></div>
       </section>
-      <AgentCreatePanel onCreate={onCreateAgent} />
+      <AgentCreatePanel onCreate={onCreateAgent} worldConfig={data?.worldConfig ?? null} />
       <section className="agents-layout">
         <AgentList
           agents={visibleAgents}
@@ -35,6 +35,7 @@ export function AgentsPage({ data, visibleAgents, focusedAgent, selectedAgentId,
 
       <AgentEditorModal
         agent={editingAgent}
+        worldConfig={data?.worldConfig ?? null}
         onClose={() => setEditingAgent(null)}
         onSave={async (agentId, input) => {
           await onUpdateAgent(agentId, input)

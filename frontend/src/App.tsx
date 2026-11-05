@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { APP_DEFAULTS } from './config'
 import { useDashboard } from './hooks/useDashboard'
 import { applyFilter, agentMatchesFilter, eventMatchesFilter, formatTime } from './lib/format'
 import { AppShell } from './components/AppShell'
@@ -23,9 +24,9 @@ function deriveStatus(stepping: boolean, isError: boolean, isLoading: boolean, i
 export default function App() {
   // 全局模拟控制状态由应用层持有，保证不同页面切换时不中断运行。
   const [autoRunning, setAutoRunning] = useState(false)
-  const [autoSpeed, setAutoSpeed] = useState(650)
-  const [eventLimit, setEventLimit] = useState(40)
-  const [memoryLimit, setMemoryLimit] = useState(8)
+  const [autoSpeed, setAutoSpeed] = useState<number>(APP_DEFAULTS.autoSpeed)
+  const [eventLimit, setEventLimit] = useState<number>(APP_DEFAULTS.eventLimit)
+  const [memoryLimit, setMemoryLimit] = useState<number>(APP_DEFAULTS.memoryLimit)
   const [filterText, setFilterText] = useState('')
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
 

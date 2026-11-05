@@ -44,7 +44,7 @@ class BehaviorCompilerTest {
     /** 固定返回向东 (1,0) 的假预言机，使测试确定性。 */
     private static class FakeBrain extends LLMBrain {
         FakeBrain() {
-            super(null);
+            super(null, com.own.virtualaibox.properties.PromptProperties.defaults(), com.own.virtualaibox.properties.RuntimeProperties.defaults());
         }
 
         @Override
