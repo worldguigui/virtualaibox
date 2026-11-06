@@ -26,6 +26,12 @@ public class LLMBrain {
     // 与填充逻辑强耦合的段落（占位符语义、字段格式由代码定义）——属代码而非配置，
     // 常量紧邻使用处，随代码评审。可调的"政策文本"（intro/task）在 prompts/decision/*.txt。
 
+    /** 世界设定段：描述/规则/可用资源（三项均空时整段省略；段尾空行由本常量负责）。 */
+    private static final String WORLD_SECTION = "=== 世界描述与规则 ===\n"
+            + "世界设定：{worldDescription}\n"
+            + "规则：{rules}\n"
+            + "可用资源定义：{itemDefinitions}\n\n";
+
     /** 当前状态段（段尾空行由本常量负责）。 */
     private static final String STATE_SECTION = "=== 当前状态 ===\n"
             + "- 当前时间tick：{tick}\n"
@@ -103,6 +109,15 @@ public class LLMBrain {
         sb.append(fill(prompts.get("intro"), Map.of(
                 "width", String.valueOf(worldState.getWorldWidth()),
                 "height", String.valueOf(worldState.getWorldHeight())))).append("\n\n");
+
+        // 世界设定信息（描述/规则/资源）让居民决策能感知经济与战斗玩法，缺省时整段省略
+        if (!worldState.getWorldDescription().isEmpty() || !worldState.getRules().isEmpty()
+                || !worldState.getItemDefinitions().isEmpty()) {
+            sb.append(fill(WORLD_SECTION, Map.of(
+                    "worldDescription", worldState.getWorldDescription(),
+                    "rules", String.valueOf(worldState.getRules()),
+                    "itemDefinitions", String.valueOf(worldState.getItemDefinitions()))));
+        }
 
         sb.append(fill(STATE_SECTION, Map.of(
                 "tick", String.valueOf(worldState.getTick()),

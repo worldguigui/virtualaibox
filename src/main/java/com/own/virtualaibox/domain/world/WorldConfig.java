@@ -27,6 +27,8 @@ import lombok.NoArgsConstructor;
 @ConfigurationProperties(prefix = "virtual-ai-box.world")
 public class WorldConfig {
     private String name = "VirtualAIBox Town";
+    /** 世界设定描述，注入居民决策提示词并经 Dashboard 展示。 */
+    private String worldDescription = "一个居民会探索、交流、收集资源并完成任务的小镇。优先遵守世界规则，保护自身和社区。";
     private int width = 37;
     private int height = 37;
     private Map<String, Boolean> rules = new LinkedHashMap<>(Map.of(
@@ -35,7 +37,10 @@ public class WorldConfig {
             "itemSpawning", true,
             "combat", false,
             "trading", false));
-    private List<WorldItemDefinition> items = List.of();
+    /** 与 application.yml 的 items 默认值保持一致（ConfigDefaultsConsistencyTest 强制）。 */
+    private List<WorldItemDefinition> items = List.of(
+            new WorldItemDefinition("berry", "野浆果", "food", 12, 5, "恢复体力的食物"),
+            new WorldItemDefinition("wood", "木材", "material", 12, 3, "建造和交易材料"));
     private List<DefaultResident> defaultResidents = List.of(
             new DefaultResident("Alice", 6, 2, new PersonalityProfile(
                     "探索者",
@@ -63,6 +68,9 @@ public class WorldConfig {
         }
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("world name must not be blank");
+        }
+        if (worldDescription == null) {
+            worldDescription = "";
         }
         if (rules == null) {
             rules = new LinkedHashMap<>();

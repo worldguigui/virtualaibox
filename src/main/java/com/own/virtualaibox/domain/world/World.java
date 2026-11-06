@@ -41,6 +41,7 @@ public class World {
         this.width = config.getWidth();
         this.height = config.getHeight();
         this.name = config.getName();
+        this.worldDescription = config.getWorldDescription();
         this.rules = new java.util.LinkedHashMap<>(config.getRules());
         this.items = new ArrayList<>(config.getItems());
     }
@@ -52,9 +53,14 @@ public class World {
                 || agent.getState().getY() >= config.getHeight())) {
             throw new IllegalArgumentException("new world dimensions would place an agent outside the world");
         }
+        if (itemInstances.stream().anyMatch(item -> item.getX() >= config.getWidth()
+                || item.getY() >= config.getHeight())) {
+            throw new IllegalArgumentException("new world dimensions would place an item outside the world");
+        }
         this.width = config.getWidth();
         this.height = config.getHeight();
         this.name = config.getName();
+        this.worldDescription = config.getWorldDescription();
         this.rules = new java.util.LinkedHashMap<>(config.getRules());
         this.items = new ArrayList<>(config.getItems());
     }

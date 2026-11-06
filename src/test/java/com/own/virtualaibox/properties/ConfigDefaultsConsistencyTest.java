@@ -37,8 +37,11 @@ class ConfigDefaultsConsistencyTest {
     /** yml 中必须出现的关键键（值对不对由下面的绑定比对管，键必须在）。 */
     private static final String[] REQUIRED_KEYS = {
             "virtual-ai-box.world.name",
+            "virtual-ai-box.world.world-description",
             "virtual-ai-box.world.width",
             "virtual-ai-box.world.height",
+            "virtual-ai-box.world.items[0].id",
+            "virtual-ai-box.world.items[1].id",
             "virtual-ai-box.world.default-residents[0].personality.role",
             "virtual-ai-box.world.default-residents[1].personality.role",
             "virtual-ai-box.runtime.perception-range",
@@ -149,9 +152,11 @@ class ConfigDefaultsConsistencyTest {
         WorldConfig defaults = WorldConfig.defaultConfig();
 
         assertEquals(defaults.getName(), bound.getName(), "world.name 与 Java 默认值漂移");
+        assertEquals(defaults.getWorldDescription(), bound.getWorldDescription(), "world.world-description 与 Java 默认值漂移");
         assertEquals(defaults.getWidth(), bound.getWidth(), "world.width 与 Java 默认值漂移");
         assertEquals(defaults.getHeight(), bound.getHeight(), "world.height 与 Java 默认值漂移");
         assertEquals(defaults.getRules(), bound.getRules(), "world.rules 与 Java 默认值漂移");
+        assertEquals(defaults.getItems(), bound.getItems(), "world.items 与 Java 默认值漂移");
         assertEquals(defaults.getDefaultResidents(), bound.getDefaultResidents(), "world.default-residents（含人格）与 Java 默认值漂移");
     }
 }

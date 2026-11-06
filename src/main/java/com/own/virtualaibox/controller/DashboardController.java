@@ -295,7 +295,7 @@ public class DashboardController {
                 "relationships", worldEngine.getWorld().getRelationships(),
                 "messages", worldEngine.getWorld().getMessages(),
                 "quests", worldEngine.getWorld().getQuests(),
-                "agents", buildAgents(3));
+                "agents", buildAgents(dashboard.getStateAgentsLimit()));
     }
 
     public record ItemRequest(String definitionId, int x, int y, int quantity) {}

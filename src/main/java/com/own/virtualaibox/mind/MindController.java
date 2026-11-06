@@ -104,6 +104,10 @@ public class MindController {
         for (Agent agent : world.getAgents()) {
             agentStates.put(agent.getId(), agent.getState());
         }
-        return new WorldState(tick, agentStates, world.getWidth(), world.getHeight());
+        // 快照携带世界设定信息，供决策提示词注入；做防御性拷贝避免与活动世界共享可变结构
+        return new WorldState(tick, agentStates, world.getWidth(), world.getHeight(),
+                world.getWorldDescription(),
+                world.getRules() == null ? Map.of() : new HashMap<>(world.getRules()),
+                world.getItems() == null ? List.of() : new ArrayList<>(world.getItems()));
     }
 }

@@ -142,7 +142,8 @@ public class WorldEngine {
     }
 
     private void simulateTownTick(int tick) {
-        if (world.getRules().getOrDefault("itemSpawning", false) && tick % 3 == 0) {
+        boolean itemSpawningEnabled = world.getRules().getOrDefault("itemSpawning", false);
+        if (itemSpawningEnabled && tick % 3 == 0) {
             worldConfig.getItems().stream()
                     .filter(definition -> definition.getMaxCount() == 0
                             || world.getItemInstances().stream().filter(item -> definition.getId().equals(item.getDefinitionId())).count() < definition.getMaxCount())
@@ -153,11 +154,15 @@ public class WorldEngine {
                         spawnItem(definition.getId(), x, y, 1);
                     });
         }
-        for (Agent agent : world.getAgents()) {
-            world.getItemInstances().stream()
-                    .filter(item -> item.getOwnerId() == null && item.getX() == agent.getState().getX() && item.getY() == agent.getState().getY())
-                    .findFirst()
-                    .ifPresent(item -> pickupItem(agent.getId(), item.getId()));
+        // 自动拾取同样受 itemSpawning 开关约束：规则关闭后遗留资源不再被拾取，
+        // 避免 pickupItem 的 requireRule 在 tick 内抛出中断整个步进
+        if (itemSpawningEnabled) {
+            for (Agent agent : world.getAgents()) {
+                world.getItemInstances().stream()
+                        .filter(item -> item.getOwnerId() == null && item.getX() == agent.getState().getX() && item.getY() == agent.getState().getY())
+                        .findFirst()
+                        .ifPresent(item -> pickupItem(agent.getId(), item.getId()));
+            }
         }
     }
 
@@ -379,7 +384,8 @@ public class WorldEngine {
     }
 
     private WorldConfig copyConfig(WorldConfig source) {
-        return new WorldConfig(source.getName(), source.getWidth(), source.getHeight(),
+        return new WorldConfig(source.getName(), source.getWorldDescription(),
+                source.getWidth(), source.getHeight(),
                 source.getRules() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(source.getRules()),
                 source.getItems() == null ? List.of() : new ArrayList<>(source.getItems()),
                 source.getDefaultResidents() == null ? List.of() : new ArrayList<>(source.getDefaultResidents()));
