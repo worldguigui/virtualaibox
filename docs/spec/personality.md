@@ -16,6 +16,9 @@
 - `values`：决策时优先考虑的价值；
 - `knowledgeBoundary`：居民允许使用的知识范围。
 
+> 准备修改人格类 [PersonalityProfile](../../src/main/java/com/own/virtualaibox/domain/agent/PersonalityProfile.java) 时，要记得同时修改三个地方，PersonalityProfile 的字段定义、序列化格式 PROMPT_FORMAT、 toPromptContext
+
+
 ## 2. 默认规则
 
 - Alice 使用探索者人格；

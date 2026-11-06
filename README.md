@@ -15,11 +15,19 @@
 ## 快速启动
 
 ```bash
-# 1. 准备密钥：复制/创建 src/main/resources/secrets.yml（被 .gitignore 排除）
-#    参考 application.yml 中的占位符，填入 LLM 平台 api-key
-secrets:
-  apikey:
-    deepseek: <你的 key>
+# 1. 准备密钥：创建 src/main/resources/secrets.yml
+#    参考 default.yml 中的占位符，填入 LLM 平台 base-url、model-name、api-key
+#    通过provider 字段指定选择的模型 
+llm:
+  provider: deepseek
+  deepseek:
+    base-url: https://api.deepseek.com
+    model-name: deepseek-chat
+    api-key: sk-kan~dao~zhe~ge~key~de~ren~bian~mao~niang~miao
+  glm:
+    base-url: https://open.bigmodel.cn/api/paas/v4
+    model-name: glm-5.3-flash
+    api-key: sk-kan~dao~zhe~ge~key~de~ren~bian~mao~niang~miao
 
 # 2. 启动（自动构建前端）
 .\mvnw.cmd spring-boot:run
@@ -29,11 +37,6 @@ http://localhost:8080
 ```
 
 > 注意：项目要求 **Java 21**（pom 配置 release 21）。命令行环境若为 JDK 17 会编译失败，请使用 JDK 21 或在 IDE 中配置对应 SDK。
-
-## 使用
-
-- 打开首页 dashboard：观察 37×37 网格世界、每 Agent 的 SECD 心智（S/E/C/D 四寄存器卡 + 状态徽标）、记忆、事件流与收敛指示器。
-- 行为 DSL：编辑 [`src/main/resources/agents/default.lambda`](src/main/resources/agents/default.lambda)，重启后生效（按 Agent 名/id/`default` 匹配加载）。语法与契约见 [`docs/spec/behavior-dsl.md`](docs/spec/behavior-dsl.md)。
 
 ## API（REST）
 
@@ -106,8 +109,8 @@ http://localhost:8080
 | 概念 | 一句话 | 权威文档 |
 |---|---|---|
 | SECD | 确定性行为执行内核（S 值栈 / E 环境 / C 控制栈 / D 续体） | `docs/spec/agent-runtime.md`、ADR-0001 |
-| Effect | SECD 只产出"意图"，EffectExecutor 才执行副作用 | `docs/spec/effect.md`、ADR-0003 |
 | LLM Oracle | 只在计划编译期定方向 + ask-llm 原语，不直接改世界 | ADR-0002 |
+| Effect | SECD 只产出"意图"，EffectExecutor 才执行副作用，也就是让世界实际发生变更 | `docs/spec/effect.md`、ADR-0003 |
 | Perception | 只读感知通道（范围 5、null→#f、同 tick 快照） | `docs/spec/perception.md` |
 | Behavior DSL | `.lambda` 行为程序（def/plan/onMeet） | `docs/spec/behavior-dsl.md` |
 | D 栈中断 | Interrupt → Handle → Resume，事件驱动精确恢复 | ADR-0004 |

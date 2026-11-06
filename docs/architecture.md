@@ -66,7 +66,6 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 | AgentMemory / MemoryStore | 认知记忆（6 类条目，短期窗口 20 tick） | `domain/memory/` | CURRENT |
 | BehaviorCompiler/Program/Registry | `.lambda` → Instruction；启动加载 agents/*.lambda | `behaviordsl/` | CURRENT（文档自标"草案"，已实现并有测试） |
 | DashboardController | REST：/api/dashboard 聚合（含每 Agent mind/memory 字段与 convergence 快照）+ state/events/agents/metrics/step/addAgent | `controller/DashboardController.java` | CURRENT（接口契约见 `spec/api.md`） |
-| GridTest | 网格邻近查询工具（测试在用，无文档定位） | `grid/GridTest.java` | EXPERIMENTAL / LEGACY |
 
 ## 3. 核心协作（数据流摘要）
 
