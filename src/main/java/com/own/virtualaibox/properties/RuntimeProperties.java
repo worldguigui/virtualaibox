@@ -40,6 +40,9 @@ public class RuntimeProperties {
     /** SECD 机器总步数上限（防无限归约）。 */
     private int secdMaxSteps = 10000;
 
+    /** SECD 每步转移 trace 开关（挂 DEBUG 日志观察者；排障/MindViewer 预留，默认关闭）。 */
+    private boolean secdTraceEnabled = false;
+
     /** 内置默认计划的路径长度（tick 数），每 tick 走一格。 */
     private int defaultPlanLength = 3;
 

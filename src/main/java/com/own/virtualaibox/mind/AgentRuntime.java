@@ -15,12 +15,15 @@ import com.own.virtualaibox.secd.SECD;
 import com.own.virtualaibox.secd.value.IntValue;
 import com.own.virtualaibox.secd.value.Value;
 import com.own.virtualaibox.properties.RuntimeProperties;
+import com.own.virtualaibox.secd.SecdEvalException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Agent 心智运行时：每个 Agent 持有一台 SECD 抽象机。
@@ -36,7 +39,13 @@ import java.util.Stack;
  * <p>支持 D 栈中断/恢复：{@link #interrupt} 把主计划执行现场挂起到 D 栈并加载
  * handler（如 onMeet 对话程序）；handler 求值结束后由 {@link #runHandler} 解开全部
  * continuation 帧，主计划从被中断的精确位置继续。</p>
+ *
+ * <p><b>求值错误降级</b>（ADR-0006）：{@link SecdEvalException}（未知原语/类型不符/
+ * 非函数应用/除零——LLM 编译产物的运行期数据不确定性）只降级本 Agent：清空机器、
+ * 下一 tick 重编译计划，不冒泡终止整个 tick。装配/生命周期错误（IllegalStateException）
+ * 仍 fail-fast 冒泡。</p>
  */
+@Slf4j
 public class AgentRuntime {
 
     private final Agent agent;
@@ -72,6 +81,11 @@ public class AgentRuntime {
         this.state = new MachineState();
         this.evaluator = new WorldOpEvaluator(agent, llmBrain);
         this.secd = new SECD(runtime.getSecdMaxSteps(), evaluator);
+        // SECD 每步转移 trace（lambdaexpr setTrace 回迁，ADR-0006）：配置开启时挂 DEBUG 日志观察者；
+        // setTrace(Consumer) 钩子同时是 MindViewer 可视化机器脉搏的预留入口
+        if (runtime.isSecdTraceEnabled()) {
+            this.secd.setTrace(line -> log.debug("SECD[{}] {}", agent.getName(), line));
+        }
         this.planCompiler = new DefaultPlanCompiler(llmBrain, runtime.getDefaultPlanLength());
         this.behaviorProgram = behaviorProgram;
     }
@@ -96,14 +110,23 @@ public class AgentRuntime {
             lastProgram = snapshotInstructions();
         }
         int steps = 0;
-        while (!state.isTerminated() && steps < runtime.getMaxStepsPerTick()) {
-            List<Effect> stepEffects = new ArrayList<>();
-            stepWithResume(stepEffects);
-            steps++;
-            effects.addAll(stepEffects);
-            if (isPrimaryAction(stepEffects)) {
-                break;
+        try {
+            while (!state.isTerminated() && steps < runtime.getMaxStepsPerTick()) {
+                List<Effect> stepEffects = new ArrayList<>();
+                stepWithResume(stepEffects);
+                steps++;
+                effects.addAll(stepEffects);
+                if (isPrimaryAction(stepEffects)) {
+                    break;
+                }
             }
+        } catch (SecdEvalException e) {
+            // 求值期错误（未知原语/类型/非函数应用/除零）：现场已不可信——
+            // 清空机器，下一 tick 重编译新计划；错误发生前已产出的 Effect 照常落地。
+            // 只降级本 Agent，不冒泡终止整个 tick（ADR-0006 fail-soft 分诊）。
+            log.error("AgentRuntime: 行为程序求值错误，本 tick 降级并重置机器 [agent={}]: {}",
+                    agent.getName(), e.getMessage());
+            state.clear();
         }
         lastActions = effects.stream().map(Effect::describe).toList();
         return effects;
@@ -158,15 +181,23 @@ public class AgentRuntime {
     public List<Effect> runHandler(int maxSteps) {
         List<Effect> effects = new ArrayList<>();
         int steps = 0;
-        while (steps < maxSteps) {
-            // 中断帧已解开（D 空）＝ 主计划已恢复，交给下一个 tick；handler 结束
-            if (state.getD().isEmpty()) {
-                break;
+        try {
+            while (steps < maxSteps) {
+                // 中断帧已解开（D 空）＝ 主计划已恢复，交给下一个 tick；handler 结束
+                if (state.getD().isEmpty()) {
+                    break;
+                }
+                List<Effect> stepEffects = new ArrayList<>();
+                stepWithResume(stepEffects);   // C 空时内部先解开一帧续体
+                steps++;
+                effects.addAll(stepEffects);
             }
-            List<Effect> stepEffects = new ArrayList<>();
-            stepWithResume(stepEffects);   // C 空时内部先解开一帧续体
-            steps++;
-            effects.addAll(stepEffects);
+        } catch (SecdEvalException e) {
+            // handler 求值错误与主计划同款降级：清空机器（含未解开的中断帧），
+            // 下一 tick 重编译；对话中断前已产出的 Effect（如 SpeakEffect）照常落地。
+            log.error("AgentRuntime: onMeet 处理器求值错误，重置机器 [agent={}]: {}",
+                    agent.getName(), e.getMessage());
+            state.clear();
         }
         return effects;
     }

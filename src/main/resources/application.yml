@@ -75,6 +75,7 @@ virtual-ai-box:
     max-steps-per-tick: 500      # 单 tick 单台 SECD 机器步进预算
     max-handler-steps: 200       # onMeet 对话处理器步数预算
     secd-max-steps: 10000        # SECD 总步数上限（防无限归约）
+    secd-trace-enabled: false    # SECD 每步转移 trace（DEBUG 日志，排障用；默认关闭）
     default-plan-length: 3       # 内置默认计划路径长度（tick 数）
     move-clamp: 1                # LLM 决策/随机降级的单轴移动钳制（格）
     convergence:

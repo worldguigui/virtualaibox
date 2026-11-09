@@ -12,11 +12,13 @@ import com.own.virtualaibox.secd.value.Value;
 import com.own.virtualaibox.secd.value.VarValue;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -286,5 +288,82 @@ class SECDTest {
         assertFalse(boolResult(eval(app(app(op("eq"),
                 new InstConst(new DirectionValue("north"))),
                 new InstConst(new DirectionValue("east"))))));
+    }
+
+    // ------------------------------------------------- 算术补全（ADR-0006：回迁 lambdaexpr 全集）
+
+    @Test
+    void subCurrying() {
+        // ((sub 10) 3) -> 7
+        assertEquals(7, intResult(eval(app(app(op("sub"), c(10)), c(3)))));
+    }
+
+    @Test
+    void divCurrying() {
+        // ((div 20) 4) -> 5
+        assertEquals(5, intResult(eval(app(app(op("div"), c(20)), c(4)))));
+    }
+
+    @Test
+    void unaryPred() {
+        // (pred 5) -> 4
+        assertEquals(4, intResult(eval(app(op("pred"), c(5)))));
+    }
+
+    @Test
+    void unaryZeropReturnsBool() {
+        // (zerop 0) -> #t；(zerop 3) -> #f
+        // （与 lambdaexpr 的 1/0 有意分歧：本机谓词一律 BoolValue，真值规则仅 #f 为假）
+        assertTrue(boolResult(eval(app(op("zerop"), c(0)))));
+        assertFalse(boolResult(eval(app(op("zerop"), c(3)))));
+    }
+
+    @Test
+    void divByZeroThrowsRichMessage() {
+        // ((div 1) 0) -> SecdEvalException，富消息含原语名与操作数
+        SecdEvalException ex = assertThrows(SecdEvalException.class,
+                () -> eval(app(app(op("div"), c(1)), c(0))));
+        assertTrue(ex.getMessage().contains("div"), "消息应含原语名: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("0"), "消息应含操作数: " + ex.getMessage());
+    }
+
+    @Test
+    void unknownBinaryOpThrowsRichMessage() {
+        // ((gcd 1) 2) -> SecdEvalException，消息含未知原语名与操作数（第一现场）
+        SecdEvalException ex = assertThrows(SecdEvalException.class,
+                () -> eval(app(app(op("gcd"), c(1)), c(2))));
+        assertTrue(ex.getMessage().contains("gcd"), "消息应含原语名: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("1"), "消息应含操作数: " + ex.getMessage());
+    }
+
+    @Test
+    void applyNonFunctionThrowsRichMessage() {
+        // ((5 6))：把整数当函数应用 -> SecdEvalException，消息含该值
+        SecdEvalException ex = assertThrows(SecdEvalException.class,
+                () -> eval(app(c(5), c(6))));
+        assertTrue(ex.getMessage().contains("5"), "消息应含被应用的值: " + ex.getMessage());
+    }
+
+    // ------------------------------------------------- trace（ADR-0006：lambdaexpr setTrace 回迁）
+
+    @Test
+    void traceEmitsPerStepLines() {
+        List<String> lines = new ArrayList<>();
+        SECD secd = new SECD();
+        secd.setTrace(lines::add);
+        secd.run(new MachineState(), app(app(op("add"), c(1)), c(2)));
+
+        assertFalse(lines.isEmpty(), "trace 应每步转移输出一行");
+        assertTrue(lines.stream().anyMatch(l -> l.contains("const")), "应含 const 规则行: " + lines);
+        assertTrue(lines.stream().anyMatch(l -> l.contains("app")), "应含 app 规则行: " + lines);
+        assertTrue(lines.stream().anyMatch(l -> l.contains("apply")), "应含 apply 规则行: " + lines);
+        assertTrue(lines.stream().anyMatch(l -> l.contains("halt")), "结束应有 halt 行: " + lines);
+        assertTrue(lines.stream().anyMatch(l -> l.contains("S=[3]")), "终态 S 顶应为 3: " + lines);
+    }
+
+    @Test
+    void traceDisabledByDefaultIsSilent() {
+        // 默认（未挂观察者）运行行为不变——开关关闭零开销
+        assertEquals(3, intResult(eval(app(app(op("add"), c(1)), c(2)))));
     }
 }

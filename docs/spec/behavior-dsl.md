@@ -44,12 +44,13 @@ direction := 'north' | 'east' | 'south' | 'west'
 | | `speak target content` | 说话 → SpeakEffect（target 可为 AgentRef） | WorldOpEvaluator |
 | | `remember key content` | 记忆 → RememberEffect | WorldOpEvaluator |
 | | `ask-llm prompt` | 同步咨询 Oracle，结果压 S + LLMRequestEffect（信息性） | WorldOpEvaluator |
-| 算术 | `add mul`（二元柯里化）`succ sqr`（一元） | 纯算术 | ArithmeticOpEvaluator |
+| 算术 | `add mul sub div`（二元柯里化；div 除零抛 SecdEvalException）`succ sqr pred zerop`（一元） | 纯算术 | ArithmeticOpEvaluator |
 | 比较 | `eq lt gt le ge`（二元） | → BoolValue；类型不符 → `#f` | ArithmeticOpEvaluator |
 | 感知 | `self closest dist-to name-of direction-of` | 只读世界查询，值压 S；null/超范围 → `#f` | WorldOpEvaluator（需 Perception） |
 | 方向 | `north east south west` | 方向常量 → DirectionValue | 编译期原子 |
 
 - `eq` 支持 Int/String/AgentRef（按 id）/Direction；`lt/gt/le/ge` 仅 Int。
+- `zerop` 返回 BoolValue（与 lambdaexpr 的 1/0 有意分歧：本机谓词一律 BoolValue，配合仅 `#f` 为假的真值规则）。未知原语名抛富消息 `SecdEvalException`（含操作数），由 AgentRuntime 降级单个 Agent（ADR-0006）。
 - **未实现**（PLANNED，写入会得到明确错误或未知名）：`observe`（P6.1 计划）、`and/or/not`（P6.1 计划）。
 
 ## 4. plan 契约

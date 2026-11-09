@@ -92,7 +92,7 @@ http://localhost:8080
 | 配置段 | 内容 | 消费方 |
 |---|---|---|
 | `virtual-ai-box.world` | 世界名、尺寸（37×37）、规则、物品、默认居民（坐标 + 人格） | `WorldConfig` → `WorldEngine` |
-| `virtual-ai-box.runtime` | 感知范围(5)、相遇距离(1.5)、事件历史上限(210)、SECD/tick 步数预算、默认计划长度、移动钳制、收敛检测阈值、通用兜底人格 | `RuntimeProperties` → MindController/TickSchedule/EventBus/ConvergenceMonitor 等 |
+| `virtual-ai-box.runtime` | 感知范围(5)、相遇距离(1.5)、事件历史上限(210)、SECD/tick 步数预算、SECD trace 开关、默认计划长度、移动钳制、收敛检测阈值、通用兜底人格 | `RuntimeProperties` → MindController/TickSchedule/EventBus/ConvergenceMonitor 等 |
 | `virtual-ai-box.prompt` | 仅短标量（默认/降级理由）；提示词只外置 `intro.txt`/`task.txt` 两个"政策文本"到 `src/main/resources/prompts/decision/`（`PromptRegistry` 启动加载、缺文件即失败、首尾空白自动裁剪）；注入类脚手架段是代码常量，不进配置（ADR-0005 三问检验） | `PromptProperties` + `PromptRegistry` → `LLMBrain` |
 | `virtual-ai-box.dashboard` | REST 默认值（事件/记忆条数、轻量快照居民数） | `DashboardProperties` → `DashboardController` |
 | `spring.virtual-clock` | 虚拟时钟初始刻度/步长/元时间 | `VirtualClockProperties` |
@@ -130,7 +130,7 @@ docs/
 ├── vision.md              # 为什么做、是什么、边界
 ├── architecture.md        # 当前架构唯一总览 / SSOT
 ├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect）
-├── decisions/             # ADR（架构决策记录）：0005=配置参数提取（0001~0004 尚未落盘）
+├── decisions/             # ADR（架构决策记录）：0001=SECD 内核、0002=LLM Oracle、0003=Effect 隔离、0004=D 栈中断、0005=配置提取、0006=SECD 可观测性与原语补全
 ├── changelog.md           # P0-P6 历史演进
 ├── consistency-audit.md   # 文档-代码一致性审计记录
 └── archive/               # 历史文档（只读）：design-v0.3-frozen.md、logs.md

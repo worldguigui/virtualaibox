@@ -10,7 +10,10 @@ import com.own.virtualaibox.secd.value.VarValue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
+import java.util.TreeMap;
+import java.util.function.Consumer;
 
 /**
  * SECD 抽象机驱动。移植自 lambdaexpr 的 {@code SECDMachine}，并做了两处改造：
@@ -23,6 +26,14 @@ import java.util.Stack;
  * <p>默认使用 {@link ArithmeticOpEvaluator}（纯算术原语）。
  * 可注入世界原语求值器（move/speak/remember/ask-llm），
  * 此时对应原语以 Effect 形式表达世界副作用。</p>
+ *
+ * <p><b>可观测性</b>（回迁自 lambdaexpr 的 {@code setTrace}，ADR-0006）：
+ * {@link #setTrace(Consumer)} 挂载每步转移观察者，每步收到单行文本
+ * （步号 + 规则名 + S/E/C/D 单行摘要）；传 null（默认）即关闭、零开销。
+ * 规则名 {@code const/var/app/lam/apply/seq/if/call/restore/halt/diverge} 大致对应
+ * 原版教材规则 (1)(2)(3)(4)(5)(8/9)(6)(7)。宿主 AgentRuntime 经
+ * {@code virtual-ai-box.runtime.secd-trace-enabled} 接通 DEBUG 日志；该 Consumer 钩子
+ * 同时是 MindViewer 前端可视化"机器脉搏"的预留入口。</p>
  */
 public class SECD {
 
@@ -31,6 +42,11 @@ public class SECD {
 
     private final int maxSteps;
     private final OpEvaluator opEvaluator;
+
+    /** 每步转移观察者（单行文本）；null = 关闭（默认，零开销）。 */
+    private Consumer<String> trace;
+    /** trace 步计数（仅诊断用；每 Agent 独占一台 SECD 实例，无共享）。 */
+    private long traceStep = 0;
 
     public SECD() {
         this(DEFAULT_MAX_STEPS, new ArithmeticOpEvaluator());
@@ -45,6 +61,11 @@ public class SECD {
         this.opEvaluator = opEvaluator;
     }
 
+    /** 挂载/卸载每步转移观察者（调试与可视化）；传 null 关闭。 */
+    public void setTrace(Consumer<String> trace) {
+        this.trace = trace;
+    }
+
     /**
      * 单步执行：弹出 C 栈顶指令并按其语义推进状态。
      *
@@ -57,6 +78,7 @@ public class SECD {
         // 常量：压入 S
         if (inst instanceof InstConst c) {
             state.getS().push(c.value);
+            trace(state, "const");
         }
         // 变量：E 有绑定则压绑定，否则压变量本身
         else if (inst instanceof InstVar v) {
@@ -65,22 +87,26 @@ public class SECD {
             } else {
                 state.getS().push(new VarValue(v.name));
             }
+            trace(state, "var");
         }
         // 应用：改写 C 顶为 [rator, rand, @]，rator 在顶
         else if (inst instanceof InstApp app) {
             state.getC().push(new InstApply());
             state.getC().push(app.rand);
             state.getC().push(app.rator);
+            trace(state, "app");
         }
         // λ 抽象：用 (arg, body, 当前 E 的浅拷贝) 构造闭包压入 S
         else if (inst instanceof InstLam lam) {
             state.getS().push(new ClosureValue(lam.arg, lam.body, new HashMap<>(state.getE())));
+            trace(state, "lam");
         }
         // 应用符号 @：弹出 rand、rator 并执行应用
         else if (inst instanceof InstApply) {
             Value rand = state.getS().pop();
             Value rator = state.getS().pop();
             effects.addAll(apply(state, rator, rand));
+            trace(state, "apply");
         }
         // 指令序列：逆序展开压入 C，保持原有顺序执行
         else if (inst instanceof InstSeq seq) {
@@ -88,11 +114,13 @@ public class SECD {
             for (int i = instructions.size() - 1; i >= 0; i--) {
                 state.getC().push(instructions.get(i));
             }
+            trace(state, "seq");
         }
         // 条件分支：弹出 S 顶作为条件，真则压入 then，假则压入 otherwise（C 栈同构，无新 D 帧）
         else if (inst instanceof InstIfThenElse ite) {
             Value cond = state.getS().pop();
             state.getC().push(BoolValue.isTruthy(cond) ? ite.then : ite.otherwise);
+            trace(state, "if");
         }
         // 未知指令
         else {
@@ -127,11 +155,13 @@ public class SECD {
             state.getE().put(cl.getArg(), arg);
             state.getC().clear();
             state.getC().push(cl.getBody());
+            trace(state, "call");
             return List.of();
         }
-        // 其余类型被当作函数应用：原实现静默跳过，这里显式报错避免静默丢状态
+        // 其余类型被当作函数应用：非函数值应用属求值期错误（lambdaexpr 的
+        // NotAFunctionException 富消息风格回迁，ADR-0006），由 AgentRuntime 降级
         else {
-            throw new IllegalStateException("Cannot apply non-function value '" + func + "' to '" + arg + "'");
+            throw new SecdEvalException("Cannot apply non-function value '" + func + "' to '" + arg + "'");
         }
     }
 
@@ -147,7 +177,7 @@ public class SECD {
 
     /**
      * 从当前状态继续运行，直到 C/D 清空或触发发散检测。
-      * 支持恢复被挂起的计划。
+     * 支持恢复被挂起的计划。
      */
     public Reduction run(MachineState state) {
         List<Effect> allEffects = new ArrayList<>();
@@ -163,6 +193,7 @@ public class SECD {
                         || (initialStateSnapshot != null && initialStateSnapshot.equals(state.captureState()))
                         || dumpGrowthCount > maxSteps / 20;
                 if (infinite) {
+                    trace(state, "diverge");
                     return new Reduction(
                             new InfiniteValue("infinite reduction detected after " + stepCount
                                     + " steps (D stack size: " + state.getD().size() + ")"),
@@ -188,6 +219,7 @@ public class SECD {
                 DumpFrame dump = state.getD().pop();
                 state.restore(dump);
                 state.getS().push(retVal);
+                trace(state, "restore");
                 continue;
             }
 
@@ -195,7 +227,42 @@ public class SECD {
             stepCount++;
         }
 
+        trace(state, "halt");
         return new Reduction(state.getS().isEmpty() ? null : state.getS().peek(), allEffects, false);
+    }
+
+    // ---------------------------------------------------------- trace（ADR-0006）
+
+    /** 每步转移输出一行：步号 + 规则名 + S/E/C/D 单行摘要（观察者未挂载时零开销）。 */
+    private void trace(MachineState state, String rule) {
+        if (trace == null) {
+            return;
+        }
+        trace.accept(String.format("%6d %-8s %s", ++traceStep, rule, compactState(state)));
+    }
+
+    /** 单行四寄存器摘要：S/C 顶优先、E 按键排序（输出确定性）、D 只报深度。 */
+    private String compactState(MachineState st) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("S=[");
+        for (int i = st.getS().size() - 1; i >= 0; i--) {
+            if (i < st.getS().size() - 1) sb.append(", ");
+            sb.append(st.getS().get(i));
+        }
+        sb.append("] E={");
+        boolean first = true;
+        for (Map.Entry<String, Value> e : new TreeMap<>(st.getE()).entrySet()) {
+            if (!first) sb.append(", ");
+            sb.append(e.getKey()).append("=").append(e.getValue());
+            first = false;
+        }
+        sb.append("} C=[");
+        for (int i = st.getC().size() - 1; i >= 0; i--) {
+            if (i < st.getC().size() - 1) sb.append(", ");
+            sb.append(st.getC().get(i));
+        }
+        sb.append("] D=").append(st.getD().size());
+        return sb.toString();
     }
 
     @SuppressWarnings("unchecked")

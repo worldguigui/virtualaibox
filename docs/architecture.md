@@ -44,11 +44,11 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 
 | 组件 | 当前职责 | 代码位置 | 状态 |
 |---|---|---|---|
-| SECD | 确定性行为执行内核：单步推进 S/E/C/D，产出 Effect | `src/main/java/com/own/virtualaibox/secd/` | CURRENT |
+| SECD | 确定性行为执行内核：单步推进 S/E/C/D，产出 Effect；setTrace 每步观察者（`secd-trace-enabled` 开关，ADR-0006） | `src/main/java/com/own/virtualaibox/secd/` | CURRENT |
 | MachineState | 四寄存器可变状态 {S,E,C,D}，restore 整体换帧 | `secd/MachineState.java` | CURRENT |
 | Instruction（7 种） | C 栈指令：Const/Var/Lam/App/Apply/Seq/IfThenElse | `secd/Inst*.java` | CURRENT |
 | Value（11 种） | Int/String/Op/PartialOp/Closure/Var/AgentRef/Bool/Direction/Infinite/Void | `secd/value/` | CURRENT |
-| ArithmeticOpEvaluator | 纯算术（add/mul/succ/sqr）+ 比较（eq/lt/gt/le/ge） | `secd/ArithmeticOpEvaluator.java` | CURRENT |
+| ArithmeticOpEvaluator | 纯算术（add/mul/sub/div、succ/sqr/pred/zerop）+ 比较（eq/lt/gt/le/ge）；富错误消息 SecdEvalException（ADR-0006） | `secd/ArithmeticOpEvaluator.java` | CURRENT |
 | AgentRuntime | 每 Agent 一台 SECD；tick 推进（≤500 步）；D 栈中断/恢复；DSL 加载 | `mind/AgentRuntime.java` | CURRENT（测试状态见 §6） |
 | MindController | 决策阶段驱动全部运行时；相遇 onMeet 中断双方；运行时缓存 | `mind/MindController.java` | CURRENT |
 | DefaultPlanCompiler | 内置默认计划（LLM 定方向 + 3 步路径）；内置 onMeet | `mind/DefaultPlanCompiler.java` | CURRENT |
@@ -108,7 +108,8 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 ## 6. 已知不确定性（不擅自推断）
 
 ### 6.1 测试状态
-- **2026-10-24 / `.\mvnw.cmd test` / 9 个测试类 75 例全部通过**（SECDTest 28、BehaviorCompilerTest 16、WorldEngineTest 11、DashboardControllerTest 7、AgentRuntimeTest 4、ConvergenceMonitorTest 4、PersonalityProfileTest 3、JunitTest 1、VirtualAiBoxApplicationTests 1）。依据 `target/surefire-reports/` 9 份报告，Failures/Errors/Skipped 均为 0。
+- **2026-11-09 / `.\mvnw.cmd test` / 10 个测试类 95 例全部通过**（SECDTest 37、BehaviorCompilerTest 16、WorldEngineTest 11、DashboardControllerTest 7、AgentRuntimeTest 5、ConvergenceMonitorTest 4、PromptRegistryTest 4、PersonalityProfileTest 5、ConfigDefaultsConsistencyTest 5、VirtualAiBoxApplicationTests 1）。新增用例对应 ADR-0006（SECD 算术补全/富消息/trace、坏程序降级）。
+- 2026-10-24 / 75 例通过的记录已被上条取代（其间 ADR-0005 增至 85 例）。
 - 前端 `npm run build` 通过；Vite 仅报告 bundle 体积提示，不影响构建结果。
 - 2026-08-22 的失败记录保留在 `consistency-audit.md`，作为历史审计背景，不再代表当前测试状态。
 
@@ -130,7 +131,7 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 | Personality | `spec/personality.md` |
 | Perception | `spec/perception.md` |
 | Effect 层 | `spec/effect.md` |
-| 设计决策 | `decisions/ADR-0001~0004` |
+| 设计决策 | `decisions/ADR-0001~0006` |
 | 协作规范 / 知识地图 | `development/AI_WORKFLOW.md`、`development/KNOWLEDGE_MAP.md` |
 | 任务记录与设计方案 | `tasks/` |
 | 历史演进 | `changelog.md` |

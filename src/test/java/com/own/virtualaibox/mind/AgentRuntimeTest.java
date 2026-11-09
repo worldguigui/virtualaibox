@@ -229,4 +229,23 @@ class AgentRuntimeTest {
         assertEquals(10, agent.getState().getX());
         assertEquals(10, agent.getState().getY());
     }
+
+    @Test
+    void evalErrorDegradesAgentNotWholeTick() {
+        // ADR-0006：坏程序（把整数当函数应用 -> SecdEvalException）被 AgentRuntime
+        // 捕获降级——清空机器、下一 tick 重编译，不冒泡终止整个 tick
+        Agent agent = newAgent("a1", "Alice", 10, 10);
+        BehaviorProgram badPlan = new BehaviorProgram(
+                app(constInt(5), constInt(6)), Map.of(), null);
+        AgentRuntime runtime = newRuntime(agent, badPlan);
+
+        // tick1：求值错误不抛出，本 tick 降级
+        List<Effect> effects = runtime.tick(worldState(agent, 1));
+        assertFalse(effects.stream().anyMatch(e -> e instanceof MoveEffect), "坏程序不应产出移动");
+        assertTrue(runtime.isIdle(), "求值错误后机器应重置为 idle");
+
+        // tick2：镇子存活——重编译（仍是同一坏计划）再次降级，而非异常循环
+        runtime.tick(worldState(agent, 2));
+        assertTrue(runtime.isIdle(), "降级后下一 tick 应能重新开始");
+    }
 }

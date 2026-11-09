@@ -51,6 +51,7 @@ class ConfigDefaultsConsistencyTest {
             "virtual-ai-box.runtime.max-steps-per-tick",
             "virtual-ai-box.runtime.max-handler-steps",
             "virtual-ai-box.runtime.secd-max-steps",
+            "virtual-ai-box.runtime.secd-trace-enabled",
             "virtual-ai-box.runtime.default-plan-length",
             "virtual-ai-box.runtime.move-clamp",
             "virtual-ai-box.runtime.convergence.stuck-ticks",
@@ -107,6 +108,7 @@ class ConfigDefaultsConsistencyTest {
         assertEquals(defaults.getMaxStepsPerTick(), bound.getMaxStepsPerTick(), "runtime.max-steps-per-tick 与 Java 默认值漂移");
         assertEquals(defaults.getMaxHandlerSteps(), bound.getMaxHandlerSteps(), "runtime.max-handler-steps 与 Java 默认值漂移");
         assertEquals(defaults.getSecdMaxSteps(), bound.getSecdMaxSteps(), "runtime.secd-max-steps 与 Java 默认值漂移");
+        assertEquals(defaults.isSecdTraceEnabled(), bound.isSecdTraceEnabled(), "runtime.secd-trace-enabled 与 Java 默认值漂移");
         assertEquals(defaults.getDefaultPlanLength(), bound.getDefaultPlanLength(), "runtime.default-plan-length 与 Java 默认值漂移");
         assertEquals(defaults.getMoveClamp(), bound.getMoveClamp(), "runtime.move-clamp 与 Java 默认值漂移");
 
