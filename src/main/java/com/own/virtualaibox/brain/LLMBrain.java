@@ -22,6 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LLMBrain {
 
+    /** ask-llm 失败哨兵文本：Oracle 调用异常时压入 S 栈，行为程序可用 eq 检测。 */
+    public static final String ORACLE_UNAVAILABLE = "[oracle-unavailable]";
+
     // ---------------------------------------------------------------- 提示词结构脚手架
     // 与填充逻辑强耦合的段落（占位符语义、字段格式由代码定义）——属代码而非配置，
     // 常量紧邻使用处，随代码评审。可调的"政策文本"（intro/task）在 prompts/decision/*.txt。
@@ -177,9 +180,16 @@ public class LLMBrain {
     /**
       * 直接咨询预言机，供 SECD 的 ask-llm 原语使用。
      * 与 {@link #decideAction} 的区别：不做 JSON 决策解析，原样返回模型文本。
+     * 调用异常时返回 {@link #ORACLE_UNAVAILABLE} 哨兵文本，
+     * 不抛出——单居民计划内降级，绝不终止整个 tick；行为程序可用 eq 检测哨兵。
      */
     public String chat(String userPrompt) {
-        return callLLM(userPrompt);
+        try {
+            return callLLM(userPrompt);
+        } catch (Exception e) {
+            log.warn("LLMBrain: ask-llm 调用失败，降级为哨兵文本 {}", ORACLE_UNAVAILABLE, e);
+            return ORACLE_UNAVAILABLE;
+        }
     }
 
     private MoveAction parseResponse(String response, String agentId) {

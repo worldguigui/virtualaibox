@@ -57,7 +57,7 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 | Effect（4 种） | MoveEffect/SpeakEffect/RememberEffect/LLMRequestEffect | `effect/` | CURRENT |
 | EffectExecutor | 副作用落地（唯一修改 World 的路径） | `executor/EffectExecutor.java` | CURRENT |
 | ActionExecutor | 移动落地（边界钳制）+ agent.moved 事件 | `executor/ActionExecutor.java` | CURRENT |
-| LLMBrain | LLM Oracle：decideAction（JSON 决策，失败降级随机）+ chat（ask-llm） | `brain/LLMBrain.java` | CURRENT |
+| LLMBrain | LLM Oracle：decideAction（JSON 决策，失败降级随机）+ chat（ask-llm，失败降级哨兵 `[oracle-unavailable]`，ADR-0002） | `brain/LLMBrain.java` | CURRENT |
 | ConvergenceMonitor | stuck(3 tick)/loop(周期 2-8)/converged(5 tick)/d-stack(>50)；边沿触发 | `monitor/ConvergenceMonitor.java` | CURRENT |
 | TickSchedule | 5 阶段 + 4.5 收敛检测；相遇去抖 | `core/TickSchedule.java` | CURRENT |
 | VirtualClock / WorldEngine | 虚拟时钟；世界配置、居民生命周期和小镇运行态编排 | `core/` | CURRENT |
