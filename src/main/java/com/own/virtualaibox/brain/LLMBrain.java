@@ -6,8 +6,8 @@ import java.util.Random;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import com.own.virtualaibox.domain.action.MoveAction;
 import com.own.virtualaibox.domain.agent.Agent;
 import com.own.virtualaibox.domain.agent.AgentState;
@@ -54,7 +54,7 @@ public class LLMBrain {
     private static final String MEMORY_SECTION = "\n=== 你的记忆 ===\n{memory}";
 
     private final ChatModel chatModel;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final Random random;
     /** 提示词行为值（virtual-ai-box.prompt 短标量）。 */
     private final PromptProperties prompt;
@@ -73,7 +73,7 @@ public class LLMBrain {
     public LLMBrain(ChatModel chatModel, PromptProperties prompt, RuntimeProperties runtime,
                     PromptRegistry prompts) {
         this.chatModel = chatModel;
-        this.objectMapper = new ObjectMapper();
+        this.jsonMapper = JsonMapper.builder().build();
         this.random = new Random();
         this.prompt = prompt;
         this.runtime = runtime;
@@ -195,7 +195,7 @@ public class LLMBrain {
     private MoveAction parseResponse(String response, String agentId) {
         try {
             String jsonStr = extractJson(response);
-            JsonNode json = objectMapper.readTree(jsonStr);
+            JsonNode json = jsonMapper.readTree(jsonStr);
 
             MoveAction action = new MoveAction();
             action.setAgentId(agentId);

@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.14</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
     <groupId>com.own</groupId>
@@ -13,7 +13,7 @@
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <langchain4j.version>1.19.5</langchain4j.version>
     </properties>
 
@@ -31,10 +31,10 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Web 支持 -->
+        <!-- Web 支持（Boot 4 起规范名改为 starter-webmvc，旧名 starter-web 已弃用） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
         <!-- 暂时用不到，先注释
@@ -101,19 +101,25 @@
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
+            <exclusions>
+                <!-- Boot 4 兼容：该集成引用 Boot 3.5 的 ClientHttpRequestFactoryBuilder，
+                     在 Boot 4.x 已移除；排除后 starter 自动走 @ConditionalOnMissingClass 分支，
+                     改用 open-ai 核心自带的 JDK HttpClient（langchain4j-http-client-jdk）。
+                     待 langchain4j 官方发布 Boot 4 适配版后可移除本排除 -->
+                <exclusion>
+                    <groupId>dev.langchain4j</groupId>
+                    <artifactId>langchain4j-http-client-spring-restclient</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-spring-boot-starter</artifactId>
         </dependency>
-        <!-- 流式调用 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
+        <!-- LLM HTTP 客户端（Boot 4 兼容替代 spring-restclient 集成，见 LlmHttpClientConfig） -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-reactor</artifactId>
+            <artifactId>langchain4j-http-client-jdk</artifactId>
         </dependency>
         <!--  https://mvnrepository.com/artifact/org.antlr/antlr4-runtime  -->
         <dependency>
