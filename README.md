@@ -79,6 +79,8 @@ http://localhost:8080
 | Perception | 只读感知通道（范围 5、null→#f、同 tick 快照） | `docs/spec/perception.md` |
 | Behavior DSL | `.lambda` 行为程序（def/plan/onMeet） | `docs/spec/behavior-dsl.md` |
 | D 栈中断 | Interrupt → Handle → Resume，事件驱动精确恢复 | ADR-0004 |
+| 副作用| SECD 产出的“意图”经过 EffectExecutor 执行后产生的实际影响 | `docs/spec/effect.md` |
+| 意图| 大模型产出的动作指令，经过 SECD 执行后产生实际影响 | `docs/spec/effect.md` |
 
 ## 六-文档概述
 
@@ -95,6 +97,10 @@ docs/
 
 ## 七-版本记录
 > 更新规则：**新版本条目插入本列表顶部**（最新在上），历史条目只追加不改。
+
+### vab2.1.6 2026-11-15
+1. 增加兼容多平台的图标文件，ico(16px,32px,48px)、png(16px,32px,180px,192px,512px)、svg(任意缩放)
+2. 更新adr0003和adr0004。
 
 ### vab2.1.5 2026-11-13
 1. 补充版本迭代记录
