@@ -2,7 +2,8 @@
 #
 # 结构：def（命名行为，可组合复用）+ plan（运行时入口）
 # 原语：move dx dy / move north / speak target text / remember key text / ask-llm "prompt"
-#       算术：add / mul / succ / sqr    比较：eq / lt / gt / le / ge
+#       算术：add / mul / sub / div / succ / sqr / pred / zerop
+#       比较：eq / lt / gt / le / ge
 #       感知：self / closest / dist-to / name-of / direction-of
 # 语法：lambda（λ name. body）/ let / if expr then expr else expr / 应用（rator rand…）
 #       / 序列 { ; } / 整数 / 字符串 / 名字 / 方向（north/east/south/west）

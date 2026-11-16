@@ -56,7 +56,7 @@ public class BehaviorCompiler {
     /** 运行时原语集合（对应 WorldOpEvaluator / ArithmeticOpEvaluator，含感知和比较）。 */
     private static final Set<String> OPS = Set.of(
             "move", "speak", "remember", "ask-llm",
-            "add", "mul", "succ", "sqr",
+            "add", "mul", "sub", "div", "succ", "sqr", "pred", "zerop",
             "eq", "lt", "gt", "le", "ge",
             "self", "closest", "dist-to", "name-of", "direction-of");
 

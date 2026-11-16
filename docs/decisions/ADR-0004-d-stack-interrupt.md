@@ -52,12 +52,6 @@ runHandler(maxSteps):
 resume:                         # 主计划从被中断的精确位置继续执行
 ```
 
-| 环节 | 方法 | 关键点 |
-|---|---|---|
-| 挂起 | `AgentRuntime.interrupt(Instruction handler)` | 压 {S,E,C,D} 快照，清 S/C，C 置 handler |
-| 处理 | `AgentRuntime.runHandler(int maxSteps)` | 以 D 栈清空为结束条件；求值异常 → 清空机器（含未解帧），下 tick 重编译 |
-| 恢复 | `AgentRuntime.stepWithResume(...)`（私有） | C 空且 D 非空时先解帧换回现场；恢复本身计一次状态转移，不产副作用 |
-
 - **中断/恢复与闭包应用挂起同构**：相遇对话以"闭包应用"形式占 D 栈一帧，`onMeet = λother. {...}` 结束后自然解帧回到主计划。
 - 恢复语义：E 引用共享、S/C/D 浅克隆快照——恢复后从被打断的那条指令继续。
 - 入口：`MindController.onMeet` 对相遇双方各执行一次 interrupt + runHandler(200)。

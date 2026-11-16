@@ -66,7 +66,7 @@ virtual-ai-box:
           values: 重视承诺和社区关系
           knowledge-boundary: 只知道已经感知到或记忆中的世界信息
 
-  # 运行时参数（Java 侧默认值见 RuntimeProperties，二者保持一致）
+  # 运行时参数
   runtime:
     perception-range: 5          # 感知范围（曼哈顿距离）
     meet-distance: 1.5           # 相遇距离（欧氏距离，格）
@@ -92,8 +92,8 @@ virtual-ai-box:
       values: 重视安全和真实经历
       knowledge-boundary: 只知道已经感知到或记忆中的世界信息
 
-  # LLM 提示词：仅 intro/task 两个"政策文本"模板外置于 classpath:prompts/decision/*.txt
-  # （PromptRegistry 启动加载、缺文件即失败、首尾空白自动裁剪）；与代码结构耦合的脚手架段
+  # LLM 提示词：仅 intro/task 两个文本模板外置于 classpath:prompts/decision/*.txt
+  # （PromptRegistry 启动加载、缺文件即失败、首尾空白自动裁剪）
   # （状态注入/他人列表/记忆段/人格格式）是代码常量，不进配置——勿在本文件里放长提示词
   prompt:
     default-reason: LLM决策

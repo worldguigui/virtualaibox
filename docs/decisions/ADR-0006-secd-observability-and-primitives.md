@@ -3,78 +3,66 @@
 - 状态：Accepted
 - 日期：2026-11-09
 
-## Context
+## 决策背景
 
-lambdaexpr（SECD 机器的原始实现）与本项目 `secd/` 包的逐文件对比考古发现三处迁移损耗：
+- 本决策的目标：把 [ADR-0001](ADR-0001-secd-runtime.md) 移植过程中丢失的调试与排障能力找回来。trace、富错误消息、原语全集，使 LLM 现场编译的行为程序出错时**可定位、可降级**。
+- lambdaexpr（SECD 机器的参考实现）进行了迭代，完善了部分代码。本项目 `secd/` 包的逐文件进行对比，发现三处值得迁移的新特性。
 
-1. **trace 能力丢失**：原版 `SECDMachine.setTrace(PrintStream)` 每步打印
-   (S,E,C,D) 四元组与命中的规则编号，是调试与教学的利器；迁移版无对应物，
-   仅剩发散比对用的 `MachineState.captureState()`。
-2. **类型化异常退化为泛化异常 + 贫消息**：原版 `TypeException`/
-   `NotAFunctionException` 携带"add 需要整数参数，得到: 3.5"式富消息；
-   迁移版 `ArithmeticOpEvaluator` 抛 `IllegalStateException("Binary Type error: " + op)`，
-   丢掉了操作数现场。而行为程序由 LLM 现场编译，求值错误的第一现场（原语名+操作数）
-   对排障至关重要。且泛化异常无法被精确捕获——一个 Agent 的坏程序会经
-   MindController 冒泡终止**整个 tick**（全镇所有 Agent 的本 tick 作废）。
-3. **λ 原语缩水**：原版一元 `pred/zerop`、二元 `sub/div` 未随迁，DSL 侧亦无补偿；
-   扩展 DSL 算术表达时将踩雷。
+1. **trace 能力**：原版 `SECDMachine.setTrace(PrintStream)` 每步打印 (S,E,C,D) 四元组与命中的规则编号，是调试与教学的利器；迁移版无对应物，仅剩发散比对用的 `MachineState.captureState()`。
+2. **完善的类型化异常**：原版 `TypeException`/`NotAFunctionException` 可以处理异常，并记录精准的错误信息。
+3. **λ 原语缩水**：原版扩展的一元 `pred/zerop`、二元 `sub/div` 很有用，值得迁移。
 
-## Decision
+## 决策选择
 
-1. **trace 回迁为 Consumer 钩子**（非 PrintStream）：
-   - `SECD.setTrace(Consumer<String>)`，每步转移输出单行
-     （步号 + 规则名 + S/E/C/D 单行摘要；S/C 顶优先、E 按键排序、D 只报深度）；
-     传 null（默认）关闭、零开销。
-   - 规则名 `const/var/app/lam/call/apply/seq/if/restore/halt/diverge`
-     对应原版教材规则 (1)(2)(3)(4)(6)(5)(8/9)(7)。
-   - 开关：`virtual-ai-box.runtime.secd-trace-enabled`（默认 false）；
-     `AgentRuntime` 开启时挂 DEBUG 日志观察者（前缀 `SECD[agent名]`）。
-   - 该 Consumer 钩子同时是 MindViewer 前端可视化"机器脉搏"的预留入口。
-2. **轻量回迁类型化异常 + 富消息**（收敛为单一类型，不建异常层级）：
-   - 新增 `secd.SecdEvalException extends RuntimeException`，消息含原语名与实际操作数
-     （如 `未知二元原语 'gcd'（操作数: 1, 2）`、`div 除以零: 1 / 0`）。
-   - 抛出点：`ArithmeticOpEvaluator`（未知原语/除零）、`SECD.apply`（非函数应用）。
-   - **爆炸半径收窄**：`AgentRuntime.tick` 与 `runHandler` 捕获本异常并降级单个
-     Agent（清空机器、下一 tick 重编译计划；错误前已产出的 Effect 照常落地），
-     不再冒泡终止整个 tick。
-   - **分诊边界不变**：装配/生命周期错误（如 `perceptionRequired` 的
-     IllegalStateException）仍 fail-fast 冒泡——运行期数据不确定性才 fail-soft。
-3. **算术原语补全**（回迁 lambdaexpr 全集）：
-   - 一元：`pred`（n-1）、`zerop`；二元：`sub`、`div`（除零抛 SecdEvalException）。
-   - **有意分歧**：`zerop` 返回 `BoolValue`（原版返回 Int 1/0）——本机比较原语
-     一律返回 BoolValue，且 DSL 真值规则为仅 `#f` 为假，1/0 语义会引入歧义。
-   - 非整数实参的**延迟闭包行为保持不变**（丘奇数等纯 λ 交互，有既有测试守护）：
-     富错误只在"双整数操作数 + 未知原语名"等确实无法求值的路径触发。
+Q. 我们到底在决策什么？<br/>
+A. 对三处新特性逐一决定：迁移什么、迁移成什么形态、边界在哪。
 
-## Alternatives
+Q. trace 和异常为什么改变形态迁移，而不是照抄原版？<br/>
+A. trace：PrintStream 进不了 SLF4J 日志体系、无法被前端消费，`Consumer<String>` 两者通吃、传 null（默认）零开销。异常：调用方实际只按"求值错误 vs 其他"二分，类型层级无消费场景；收敛为单一 `SecdEvalException` + 富消息（原语名 + 操作数），以更低复杂度达成同一目标。
 
-1. **原样回迁完整异常层级**（TypeException/NotAFunctionException/DivergenceException）
-   ——被拒：调用方实际只按"求值错误 vs 其他"二分，层级无消费场景；单一类型 + 富消息
-   以更低复杂度达成同一目标。
-2. **trace 走 PrintStream**（原版 API 原样）——被拒：进不了 SLF4J 日志体系、
-   无法被前端消费；Consumer 钩子两者通吃且测试友好。
-3. **仅在 behavior-dsl spec 明示"算术仅 add/mul"边界**（不动代码）——被拒：
-   补全成本（各 ~3 行）低于文档约束的长期维护成本，且消除了 LLM 编译产出
-   `sub` 时"未知名→静默柯里化→难懂行为"的陷阱。
+Q. 什么错误降级、什么错误炸穿 tick？<br/>
+A. 分诊边界：**运行期数据不确定性才 fail-soft**。行为程序由 LLM 现场编译，坏程序是常态，爆炸半径收窄到单 Agent（清空机器、下一 tick 重编译，已产出的 Effect 照常落地）；装配/生命周期错误（如 `perceptionRequired` 的 IllegalStateException）是真 bug，fail-fast 冒泡。
 
-## Consequences
+## 最终决策
 
-- **行为变化（正向）**：单个 Agent 的坏行为程序不再终止整个 tick；
-  该 Agent 本 tick 静默（无主动作），下一 tick 重编译——ConvergenceMonitor 的
-  stuck 检测（连续 3 tick 无移动）天然兜底"持续坏程序"的可观测性。
-- 已知限制：`AgentRuntime.stepWithResume` 自行执行的续体恢复（C 空解 D 帧）
-  不经 `SECD.step`，trace 暂不覆盖该转移；与 stepWithResume/SECD.run 的 DRY
-   重复项（历史遗留）留待后续一并处理。
-- `ConfigDefaultsConsistencyTest` 的 REQUIRED_KEYS 与绑定比对已同步
-  `secd-trace-enabled`（yml 与 Java 默认值一致性继续受机制化校验）。
-- 遗留问题（本 ADR 不处理，见考古报告）：DumpFrame 克隆 O(n²) 回退、
-  `SECD.java` 对原版"静默跳过"的不实 javadoc、四处悬空的
-  `secd-fusion-design-frozen.md` 引用。
+- **三处新特性按"Consumer 钩子 + 单一类型化异常 + 原语全集"形态迁移：**
 
-## 验证
+| 迁移内容 | 迁移形态 | 契约 |
+|---|---|---|
+| trace 能力 | `SECD.setTrace(Consumer<String>)`，每步单行输出（步号 + 规则名 + S/E/C/D 摘要） | 规则名对应原版教材规则；开关 `virtual-ai-box.runtime.secd-trace-enabled`（默认 false）；也是 MindViewer"机器脉搏"预留入口 |
+| 类型化异常 | 单一 `SecdEvalException`，消息含原语名与操作数 | 抛出点：`ArithmeticOpEvaluator`、`SECD.apply`；`AgentRuntime` 捕获后降级单 Agent；装配/生命周期错误仍 fail-fast |
+| λ 原语缩水 | 补全一元 `pred/zerop`、二元 `sub/div` | **有意分歧**：`zerop` 返回 `BoolValue`（原版 Int 1/0）；非整数实参延迟闭包行为不变 |
 
-- `.\mvnw.cmd test`：10 个测试类 **95 例全部通过**（基线 85 → 95）。
-  新增：SECDTest 9 例（sub/div/pred/zerop 算术、除零/未知原语/非函数应用富消息、
-  trace 每步输出与默认关闭）、AgentRuntimeTest 1 例（坏程序降级不终止 tick）。
-- 降级路径的 ERROR 日志实测输出富消息：
-  `AgentRuntime: 行为程序求值错误，本 tick 降级并重置机器 [agent=Alice]: Cannot apply non-function value '5' to '6'`。
+## 改造边界
+
+### 明令禁止的改动
+
+1. **分诊边界不得移动**：求值错误降级单 Agent，装配/生命周期错误 fail-fast，两方向都不得改。
+2. **异常信息要携带详细的信息**：求值异常必须携带原语名与实际操作数。
+3. **禁止 zerop/比较原语回退 Int 1/0**：一律 BoolValue（[ADR-0001](ADR-0001-secd-runtime.md) 有意分歧）。
+
+### 涉及旧有模块与核心文件
+
+| 模块 / 文件 | 改动 |
+|---|---|
+| `secd/SECD`（改造） | `setTrace(Consumer<String>)`；非函数应用抛 `SecdEvalException` |
+| `secd/SecdEvalException`（新增） | 单一类型化求值异常 |
+| `secd/ArithmeticOpEvaluator`（改造） | 补全 pred/zerop/sub/div；富消息；zerop → BoolValue |
+| `behaviordsl/BehaviorCompiler`（改造，2026-11-16 补） | OPS 词表登记 pred/zerop/sub/div（此前遗漏：求值器认识这四个名字，DSL 编译器不认识） |
+| `mind/AgentRuntime`（改造） | tick/runHandler 捕获降级；trace 开启时挂 DEBUG 观察者 |
+| `properties/RuntimeProperties` + `application.yml`（扩展） | 新增 `secd-trace-enabled` |
+| `secd/SECDTest`（新增）、`mind/AgentRuntimeTest`、`properties/ConfigDefaultsConsistencyTest`（扩展） | 守护测试 |
+
+## 最终实现
+
+- `SECD.setTrace(Consumer<String>)` 每步单行输出，null 零开销；`AgentRuntime` 按开关挂 DEBUG 日志观察者。
+- `AgentRuntime.tick` / `runHandler` 捕获 `SecdEvalException` 降级：清空机器、下 tick 重编译，已产出的 Effect 照常落地。
+- `ArithmeticOpEvaluator` 补全 `pred`/`zerop`/`sub`/`div`。
+- 2026-11-16 收尾：`BehaviorCompiler.OPS` 词表登记这四个原语（此前求值器已支持，但 DSL 编译器不认识，写进 .lambda 会在加载期报"引用了未知名称"）。至此求值器、编译器、spec 三处一致，守护用例 `BehaviorCompilerTest.arithmeticPrimitivesCompileAndRun`。
+
+## 决策后果
+
+- 单个 Agent 的坏行为程序不再终止整个 tick；该 Agent 本 tick 静默，下一 tick 重编译。ConvergenceMonitor 的 stuck 检测天然兜底“持续坏程序”的可观测性。
+- 已知限制：`stepWithResume` 的续体恢复不经 `SECD.step`，trace 暂不覆盖该转移。
+- 一个新原语要同步四处：求值器（WorldOpEvaluator/ArithmeticOpEvaluator）、编译器词表（OPS）、spec 文档、（可选）前端展示。
+- 遗留问题（本 ADR 不处理）：DumpFrame 克隆 O(n²) 回退、`SECD.java` 不实 javadoc、四处悬空的 `secd-fusion-design-frozen.md` 引用。

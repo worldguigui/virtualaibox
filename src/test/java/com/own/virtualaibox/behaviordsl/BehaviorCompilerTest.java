@@ -324,4 +324,25 @@ class BehaviorCompilerTest {
         assertTrue(runtime.getState().getD().isEmpty(),
                 "handler 结束后 D 栈清空（主计划恢复）");
     }
+
+    @Test
+    void arithmeticPrimitivesCompileAndRun() {
+        // ADR-0006 补全的 pred/zerop/sub/div 进入 DSL 词表后，应当可编译、可运行：
+        // zerop 0 为真 → then 分支；pred 2 = 1；div 6 (sub 5 4) = 6
+        String src = """
+                plan = if (zerop 0) then { remember "z" "零"; move (pred 2) (div 6 (sub 5 4)) } else (move 0 1)
+                """;
+        Agent agent = newAgent("a1", "Alice", 10, 10);
+        AgentRuntime runtime = new AgentRuntime(
+                agent, fakeBrain, compiler.compile(src, "t.lambda"));
+
+        List<Effect> effects = runtime.tick(worldState(agent, 1));
+
+        assertTrue(effects.stream().anyMatch(e -> e instanceof RememberEffect),
+                "zerop 0 为真 → then 分支应产出记忆副作用");
+        MoveEffect move = (MoveEffect) effects.stream()
+                .filter(e -> e instanceof MoveEffect).findFirst().orElseThrow();
+        assertEquals(1, move.deltaX(), "pred 2 应等于 1");
+        assertEquals(6, move.deltaY(), "div 6 (sub 5 4) 应等于 6");
+    }
 }

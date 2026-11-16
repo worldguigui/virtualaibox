@@ -11,7 +11,7 @@
 ## 决策选择
 
 Q. 我们到底在决策什么？<br/>
-A. 行为已经交给确定性内核（[ADR-0001](ADR-0001-secd-runtime.md)），大模型思考的接入时机也已经确定（[ADR-0002](ADR-0002-llm-integration.md)）。现在要决定：内核“想改世界”这件事用什么形式表达，又由谁真正落地。
+A. 行为已经交给确定性内核（[ADR-0001](ADR-0001-secd-runtime.md)），大模型思考的接入时机也已经确定（[ADR-0002](ADR-0002-llm-oracle.md)）。现在要决定：内核“想改世界”这件事用什么形式表达，又由谁真正落地。
 
 Q. 让 SECD 直接改 World 不行吗？求值器里拿到 World 引用，算完就 set 进去，最省事。<br/>
 A. 不行。这是把“计算”和“事实”耦合在一起：同一个方法既算值又改世界，行为无法单测（必须起一个 World）、无法审计（没有中间记录）、无法回放（改动已发生，无法重放）。内核只能产出“意图描述”，落地是别人的事。
@@ -40,9 +40,11 @@ EffectExecutor = 执行  唯一允许修改 World 的路径（Move 经 ActionExe
 
 ### 明令禁止的改动
 
-1.**禁止读操作走 Effect**：不得复活 `ObserveEffect`，也不得为感知新增 Effect。
-2.**禁止绕过 `EffectExecutor` 落地居民行为**：不得新增第二处调用 `ActionExecutor.executeMoveAction` 或直接 `memory.recordObservation` 的路径。
-3**禁止 Effect 携带可执行逻辑**：Effect 是 record（纯数据），不得内含 `Runnable` / 回调，否则无法保证 SECD机 无法触摸到世界。
+1. **禁止读操作走 Effect**：不得复活 `ObserveEffect`，也不得为感知新增 Effect。
+2. **禁止绕过 `EffectExecutor` 落地居民行为**：不得新增第二处调用 `ActionExecutor.executeMoveAction` 或直接 `memory.recordObservation` 的路径。
+3. **禁止 Effect 携带可执行逻辑**：Effect 是 record（纯数据），不得内含 `Runnable` / 回调，否则 SECD机 就有了触摸到世界的可能。
+4. **move 单形态**：`move north`（方向写法）与 `move dx dy`（整数写法）在 DSL 原语层归一为同一个 `MoveEffect(deltaX, deltaY)`。
+5. **感知只读化的边界契约**：感知原语的值直接压入 S 栈、不产生 Effect；“感知不到”在返回边界统一转 `#f`（closest 查无对象、dist-to 无值、direction-of 无方位），**null 不出机器**。
 
 ### 涉及旧有模块与核心文件
 
