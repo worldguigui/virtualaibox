@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * 闭包（函数 + 捕获的环境）。
- * 移植自 lambdaexpr 的 {@code ClosureValue}，保留递归打印与防环逻辑。
+ * 移植自 lambdaexpr 的 ClosureValue，保留递归打印与防环逻辑。
  */
 public class ClosureValue implements Value {
     final String arg;

@@ -14,19 +14,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AgentStuckEvent extends DomainEvent {
 
-    /** 卡住的 Agent ID */
+    // 卡住的 Agent ID
     private String agentId;
 
-    /** 卡住的 Agent 名称 */
+    // 卡住的 Agent 名称
     private String agentName;
 
-    /** 卡住位置 X */
+    // 卡住位置 X
     private int x;
 
-    /** 卡住位置 Y */
+    // 卡住位置 Y
     private int y;
 
-    /** 连续原地不动的 tick 数 */
+    // 连续原地不动的 tick 数
     private int stuckTicks;
 
     @Override

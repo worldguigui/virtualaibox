@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Data
 @ConfigurationProperties(prefix = "spring.virtual-clock")
-/** 绑定虚拟时钟的启动刻度、时间步长和元时间配置。 */
+// 绑定虚拟时钟的启动刻度、时间步长和元时间配置。
 public class VirtualClockProperties {
 
     private int tick;

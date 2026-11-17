@@ -34,18 +34,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 验证 SECD 心智运行时产出 Effect，且世界副作用与计算隔离。
  *
- * <p>验证点包括默认计划、跨 tick 执行和副作用隔离：</p>
- * <ul>
- *   <li>心智驱动：AgentRuntime 每 tick 产出移动副作用，不再由 LLM 直接决定每个动作；</li>
- *   <li>多 tick 计划：行为程序驻留 C 栈，每 tick 只推进一步动作，耗尽后自动重编译；</li>
- *   <li>副作用隔离：WorldOpEvaluator 只返回 Effect，不修改任何世界状态。</li>
- * </ul>
+ * 验证点包括默认计划、跨 tick 执行和副作用隔离：
+ *   心智驱动：AgentRuntime 每 tick 产出移动副作用，不再由 LLM 直接决定每个动作；
+ *   多 tick 计划：行为程序驻留 C 栈，每 tick 只推进一步动作，耗尽后自动重编译；
+ *   副作用隔离：WorldOpEvaluator 只返回 Effect，不修改任何世界状态。
  *
- * <p>用 FakeBrain（固定方向）替代真实 LLM，使测试确定性可重复。</p>
+ * 用 FakeBrain（固定方向）替代真实 LLM，使测试确定性可重复。
  */
 class AgentRuntimeTest {
 
-    /** 固定返回向东 (1,0) 的假预言机。 */
+    // 固定返回向东 (1,0) 的假预言机。
     private static class FakeBrain extends LLMBrain {
         FakeBrain() {
             super(null, com.own.virtualaibox.properties.PromptProperties.defaults(), com.own.virtualaibox.properties.RuntimeProperties.defaults()); // 不接真实 ChatModel；所有方法被重写，不会触发网络调用
@@ -76,8 +74,8 @@ class AgentRuntimeTest {
     /**
      * 显式构造"1 记忆写入 + steps 步移动"的多步行为程序。
      *
-     * <p>与 {@code DefaultPlanCompiler.PATH_LENGTH} 常量解耦：PATH_LENGTH 已是 1（默认计划单步耗尽），
-     * 而"计划跨 tick 驻留 / 耗尽重编译 / D 栈中断恢复"这些行为需要多步计划才能验证。</p>
+     * 与 DefaultPlanCompiler.PATH_LENGTH 常量解耦：PATH_LENGTH 已是 1（默认计划单步耗尽），
+     * 而"计划跨 tick 驻留 / 耗尽重编译 / D 栈中断恢复"这些行为需要多步计划才能验证。
      */
     private static BehaviorProgram multiStepPlan(int steps) {
         List<Instruction> instrs = new ArrayList<>();

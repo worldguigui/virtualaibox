@@ -36,12 +36,12 @@ public class EventBus {
     // 异步执行线程池
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
-    /** 测试/纯代码路径：使用默认历史上限。 */
+    // 测试/纯代码路径：使用默认历史上限。
     public EventBus() {
         this(RuntimeProperties.defaults());
     }
 
-    /** Spring 装配：历史上限来自运行时配置。 */
+    // Spring 装配：历史上限来自运行时配置。
     @Autowired
     public EventBus(RuntimeProperties runtime) {
         this.maxHistorySize = runtime.getEventHistorySize();

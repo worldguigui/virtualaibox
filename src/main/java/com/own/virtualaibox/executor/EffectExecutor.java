@@ -19,15 +19,13 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * 副作用执行器：把 SECD 计算产出的 {@link Effect} 落地到 World。
+ * 副作用执行器：把 SECD 计算产出的 Effect 落地到 World。
  *
- * <p>SECD 只计算、只产生意图；本类负责真正的世界副作用：</p>
- * <ul>
- *   <li>{@link MoveEffect}    → {@link ActionExecutor} 落地移动 + 发布移动/决策事件</li>
- *   <li>{@link SpeakEffect}   → 发布说话事件</li>
- *   <li>{@link RememberEffect} → 写入 Agent 记忆（AgentMemory）</li>
- *   <li>{@link LLMRequestEffect} → 信息性副作用，仅日志记录</li>
- * </ul>
+ * SECD 只计算、只产生意图；本类负责真正的世界副作用：
+ *   MoveEffect    → ActionExecutor 落地移动 + 发布移动/决策事件
+ *   SpeakEffect   → 发布说话事件
+ *   RememberEffect → 写入 Agent 记忆（AgentMemory）
+ *   LLMRequestEffect → 信息性副作用，仅日志记录
  */
 @Component
 @Slf4j

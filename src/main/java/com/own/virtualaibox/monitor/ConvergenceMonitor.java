@@ -26,34 +26,32 @@ import java.util.stream.Collectors;
 /**
  * 收敛 / 活锁检测器。
  *
- * <p>对应设计（docs/secd-fusion-design-frozen.md §9）：把"归一化"落地为工程检测：</p>
- * <ul>
- *   <li><b>Fixed Point / Stability</b> —— 整个世界长期无变化 → {@link WorldConvergedEvent}；</li>
- *   <li><b>AgentStuck</b> —— 单个 Agent 原地不动（含被世界边界钳制）→ {@link AgentStuckEvent}；</li>
- *   <li><b>Loop Detection</b> —— 位置进入周期 A→B→A→B… → {@link AgentLoopEvent}；</li>
- *   <li><b>D 栈增长（无限归约启发式）</b> —— SECD 深递归 / D 栈膨胀 → {@link AgentLoopEvent}（reason=d-stack）。</li>
- * </ul>
+ * 对应设计（docs/secd-fusion-design-frozen.md §9）：把"归一化"落地为工程检测：
+ *   Fixed Point / Stability —— 整个世界长期无变化 → WorldConvergedEvent；
+ *   AgentStuck —— 单个 Agent 原地不动（含被世界边界钳制）→ AgentStuckEvent；
+ *   Loop Detection —— 位置进入周期 A→B→A→B… → AgentLoopEvent；
+ *   D 栈增长（无限归约启发式） —— SECD 深递归 / D 栈膨胀 → AgentLoopEvent（reason=d-stack）。
  *
- * <p>全部事件为<b>边沿触发</b>：条件首次成立时发布一次，状态被打破后清除，
+ * 全部事件为边沿触发：条件首次成立时发布一次，状态被打破后清除，
  * 重新成立才会再发，避免每个 tick 刷屏。检测基于执行后（副作用已落地）的世界状态，
- * 由 {@code TickSchedule} 每 tick 末尾调用。</p>
+ * 由 TickSchedule 每 tick 末尾调用。
  */
 @Component
 @Slf4j
 public class ConvergenceMonitor {
 
-    /** 收敛检测阈值（virtual-ai-box.runtime.convergence）。 */
+    // 收敛检测阈值（virtual-ai-box.runtime.convergence）。
     private final RuntimeProperties.Convergence thresholds;
 
     private final EventBus eventBus;
     private final MindController mindController;
 
-    /** 测试/纯代码路径：使用默认阈值。 */
+    // 测试/纯代码路径：使用默认阈值。
     public ConvergenceMonitor(EventBus eventBus, MindController mindController) {
         this(eventBus, mindController, RuntimeProperties.defaults());
     }
 
-    /** Spring 装配：阈值来自运行时配置。 */
+    // Spring 装配：阈值来自运行时配置。
     @Autowired
     public ConvergenceMonitor(EventBus eventBus, MindController mindController, RuntimeProperties runtime) {
         this.eventBus = eventBus;
@@ -61,16 +59,16 @@ public class ConvergenceMonitor {
         this.thresholds = runtime.getConvergence();
     }
 
-    /** agentId → 位置历史（按 tick 有序，头部最旧）。 */
+    // agentId → 位置历史（按 tick 有序，头部最旧）。
     private final Map<String, Deque<Position>> positionHistory = new ConcurrentHashMap<>();
-    /** 已发布 stuck 的 agentId → 名称（边沿触发去重，名称供收敛指示器展示）。 */
+    // 已发布 stuck 的 agentId → 名称（边沿触发去重，名称供收敛指示器展示）。
     private final Map<String, String> stuckFired = new ConcurrentHashMap<>();
-    /** 已发布 loop 的 agentId → 名称。 */
+    // 已发布 loop 的 agentId → 名称。
     private final Map<String, String> loopFired = new ConcurrentHashMap<>();
-    /** 已发布 D 栈超限的 agentId → 名称。 */
+    // 已发布 D 栈超限的 agentId → 名称。
     private final Map<String, String> dStackFired = new ConcurrentHashMap<>();
 
-    /** 世界连续稳定（签名不变）tick 计数。 */
+    // 世界连续稳定（签名不变）tick 计数。
     private int stableTicks = 0;
     private String lastWorldSignature = null;
     private boolean convergedFired = false;
@@ -88,7 +86,7 @@ public class ConvergenceMonitor {
 
     // ------------------------------------------------------------------ 单 Agent
 
-    /** 更新单 Agent 位置历史，检测卡死与位置周期。 */
+    // 更新单 Agent 位置历史，检测卡死与位置周期。
     private void checkAgentPosition(int tick, Agent agent) {
         String agentId = agent.getId();
         Deque<Position> history = positionHistory.computeIfAbsent(agentId, k -> new ArrayDeque<>());
@@ -116,7 +114,7 @@ public class ConvergenceMonitor {
         }
     }
 
-    /** 最近 stuck-ticks 个位置是否完全相同（固定点，非周期）。 */
+    // 最近 stuck-ticks 个位置是否完全相同（固定点，非周期）。
     private boolean isStuck(Deque<Position> history) {
         int stuckTicks = thresholds.getStuckTicks();
         if (history.size() < stuckTicks) {
@@ -132,7 +130,7 @@ public class ConvergenceMonitor {
         return true;
     }
 
-    /** 尾部位置序列是否构成"真实"周期（排除全相同的固定点）。 */
+    // 尾部位置序列是否构成"真实"周期（排除全相同的固定点）。
     private boolean isLoop(Deque<Position> history) {
         if (history.size() < 2 * 2) {
             return false;
@@ -149,7 +147,7 @@ public class ConvergenceMonitor {
         return false;
     }
 
-    /** 尾部长 2L 序列是否构成周期 L：两段逐点一致，且段内有运动（排除固定点）。 */
+    // 尾部长 2L 序列是否构成周期 L：两段逐点一致，且段内有运动（排除固定点）。
     private boolean isCycle(Position[] arr, int L) {
         int n = arr.length;
         boolean moving = false;
@@ -206,7 +204,7 @@ public class ConvergenceMonitor {
         log.info("ConvergenceMonitor: {} 进入位置周期，周期={}, 模式={}", agent.getName(), L, pattern);
     }
 
-    /** 周期路径摘要，如 "(0,0)→(1,0)→(0,0)"。 */
+    // 周期路径摘要，如 "(0,0)→(1,0)→(0,0)"。
     private String patternSummary(Position[] arr, int L) {
         StringBuilder sb = new StringBuilder();
         for (int i = arr.length - L; i < arr.length; i++) {
@@ -220,7 +218,7 @@ public class ConvergenceMonitor {
 
     // ------------------------------------------------------------------ 世界
 
-    /** 检测世界是否长期无变化（不动点 / 稳定态）。 */
+    // 检测世界是否长期无变化（不动点 / 稳定态）。
     private void checkWorldConverged(int tick, World world) {
         String signature = worldSignature(world);
         if (signature.equals(lastWorldSignature)) {
@@ -236,7 +234,7 @@ public class ConvergenceMonitor {
         }
     }
 
-    /** 所有 Agent 位置的有序摘要（顺序无关的稳定签名）。 */
+    // 所有 Agent 位置的有序摘要（顺序无关的稳定签名）。
     private String worldSignature(World world) {
         return world.getAgents().stream()
                 .sorted(Comparator.comparing(Agent::getId))
@@ -259,7 +257,7 @@ public class ConvergenceMonitor {
 
     // ------------------------------------------------------------------ SECD
 
-    /** 无限归约启发式：D 栈深度超过阈值即告警（深递归 / 活锁）。 */
+    // 无限归约启发式：D 栈深度超过阈值即告警（深递归 / 活锁）。
     private void checkDStackGrowth(int tick) {
         for (AgentRuntime runtime : mindController.getRuntimes()) {
             Agent agent = runtime.getAgent();
@@ -288,7 +286,7 @@ public class ConvergenceMonitor {
         }
     }
 
-    /** 一个 Agent 在某个 tick 的位置快照。 */
+    // 一个 Agent 在某个 tick 的位置快照。
     private record Position(int tick, int x, int y) {
         boolean samePosition(Position o) {
             return o != null && this.x == o.x && this.y == o.y;
@@ -298,7 +296,7 @@ public class ConvergenceMonitor {
     /**
       * 当前收敛状态快照（供 dashboard 收敛指示器使用）。
      *
-     * <p>反映当前仍处于"已检出"状态（边沿触发尚未被打破）的检测结果。</p>
+     * 反映当前仍处于"已检出"状态（边沿触发尚未被打破）的检测结果。
      */
     public Map<String, Object> summary() {
         Map<String, Object> m = new HashMap<>();

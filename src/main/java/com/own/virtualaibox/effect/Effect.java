@@ -3,13 +3,11 @@ package com.own.virtualaibox.effect;
 /**
  * 副作用描述（意图），SECD 计算与 World 副作用之间的隔离边界。
  *
- * <p>每个实现描述一种由行为运行时产生、再交给执行器落地的副作用意图：</p>
- * <pre>
+ * 每个实现描述一种由行为运行时产生、再交给执行器落地的副作用意图：
  *   SECD = 计算           → 产生 Effect（意图）
  *   EffectExecutor = 真正执行副作用 → 修改 World
- * </pre>
  *
- * <p>具体副作用类型包括移动、发言、记忆和 LLM 请求。</p>
+ * 具体副作用类型包括移动、发言、记忆和 LLM 请求。
  */
 public interface Effect {
 

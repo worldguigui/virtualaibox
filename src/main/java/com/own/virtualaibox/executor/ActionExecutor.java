@@ -12,12 +12,12 @@ import java.time.Instant;
 
 @Component
 @Slf4j
-/** 执行领域动作并发布相应的领域事件。 */
+// 执行领域动作并发布相应的领域事件。
 public class ActionExecutor {
     
     private final EventBus eventBus;
 
-    /** 使用事件总线创建动作执行器。 */
+    // 使用事件总线创建动作执行器。
     /**
      * @param eventBus 用于发布动作结果事件的事件总线
      */
@@ -25,7 +25,7 @@ public class ActionExecutor {
         this.eventBus = eventBus;
     }
 
-    /** 在世界中执行 Agent 的移动动作并发布移动事件。 */
+    // 在世界中执行 Agent 的移动动作并发布移动事件。
     /**
      * @param action 待执行的移动动作
      * @param world 动作作用的世界

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-/** 描述 Agent 在世界中的相对移动动作。 */
+// 描述 Agent 在世界中的相对移动动作。
 public class MoveAction {
     private String agentId;
     private int deltaX;

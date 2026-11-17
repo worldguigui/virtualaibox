@@ -16,9 +16,9 @@ import lombok.NoArgsConstructor;
 /**
  * 世界运行配置：尺寸、默认居民（含人格）与初始化参数。
  *
- * <p>配置主源是 application.yml 的 {@code virtual-ai-box.world} 段；
+ * 配置主源是 application.yml 的 virtual-ai-box.world 段；
  * 下面字段初始化器里的默认值是 yml 缺失时的代码兜底，两者应保持一致
- * （网格尺寸、默认居民坐标与人格）。</p>
+ * （网格尺寸、默认居民坐标与人格）。
  */
 @Data
 @NoArgsConstructor
@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
 @ConfigurationProperties(prefix = "virtual-ai-box.world")
 public class WorldConfig {
     private String name = "VirtualAIBox Town";
-    /** 世界设定描述，注入居民决策提示词并经 Dashboard 展示。 */
+    // 世界设定描述，注入居民决策提示词并经 Dashboard 展示。
     private String worldDescription = "一个居民会探索、交流、收集资源并完成任务的小镇。优先遵守世界规则，保护自身和社区。";
     private int width = 37;
     private int height = 37;
@@ -37,7 +37,7 @@ public class WorldConfig {
             "itemSpawning", true,
             "combat", false,
             "trading", false));
-    /** 与 application.yml 的 items 默认值保持一致（ConfigDefaultsConsistencyTest 强制）。 */
+    // 与 application.yml 的 items 默认值保持一致（ConfigDefaultsConsistencyTest 强制）。
     private List<WorldItemDefinition> items = List.of(
             new WorldItemDefinition("berry", "野浆果", "food", 12, 5, "恢复体力的食物"),
             new WorldItemDefinition("wood", "木材", "material", 12, 3, "建造和交易材料"));
@@ -57,7 +57,7 @@ public class WorldConfig {
                     "重视承诺和社区关系",
                     "只知道已经感知到或记忆中的世界信息")));
 
-    /** 代码兜底默认配置（无参构造的字段初始化器是唯一默认值来源）。 */
+    // 代码兜底默认配置（无参构造的字段初始化器是唯一默认值来源）。
     public static WorldConfig defaultConfig() {
         return new WorldConfig();
     }
@@ -104,7 +104,7 @@ public class WorldConfig {
         private String name;
         private int x;
         private int y;
-        /** 该居民初始化时的人格；null 时由世界引擎回落到配置的通用兜底人格。 */
+        // 该居民初始化时的人格；null 时由世界引擎回落到配置的通用兜底人格。
         private PersonalityProfile personality;
 
         public DefaultResident(String name, int x, int y) {

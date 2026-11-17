@@ -40,15 +40,15 @@ import com.own.virtualaibox.properties.RuntimeProperties;
 
 @RestController
 @RequestMapping("/api/dashboard")
-/** 提供世界、Agent、事件和运行指标的看板查询接口。 */
+// 提供世界、Agent、事件和运行指标的看板查询接口。
 public class DashboardController {
 
     private final WorldEngine worldEngine;
     private final MindController mindController;
     private final ConvergenceMonitor convergenceMonitor;
-    /** API 默认值（virtual-ai-box.dashboard）。 */
+    // API 默认值（virtual-ai-box.dashboard）。
     private final DashboardProperties dashboard;
-    /** 运行参数（指标的事件扫描上限）。 */
+    // 运行参数（指标的事件扫描上限）。
     private final RuntimeProperties runtime;
 
     /**
@@ -98,7 +98,7 @@ public class DashboardController {
         return result;
     }
 
-    /** 处理新增居民请求，并返回新增居民与最新世界摘要。 */
+    // 处理新增居民请求，并返回新增居民与最新世界摘要。
     /**
      * @return 新增 Agent 的处理结果
      */
@@ -115,7 +115,7 @@ public class DashboardController {
         return result;
     }
 
-    /** 修改现有居民信息，并返回更新后的居民和世界状态。 */
+    // 修改现有居民信息，并返回更新后的居民和世界状态。
     @PutMapping("/agents/{agentId}")
     public Map<String, Object> updateAgent(@PathVariable String agentId,
                                            @RequestBody(required = false) AgentUpdateRequest request) {
@@ -131,13 +131,13 @@ public class DashboardController {
     }
 
     @GetMapping("/world")
-    /** 读取当前世界设计配置。 */
+    // 读取当前世界设计配置。
     public WorldConfig worldConfig() {
         return worldEngine.getWorldConfig();
     }
 
     @PutMapping("/world")
-    /** 原子替换世界设计配置，非法请求由统一异常处理器转为 400。 */
+    // 原子替换世界设计配置，非法请求由统一异常处理器转为 400。
     public Map<String, Object> updateWorld(@RequestBody WorldConfig request) {
         WorldConfig config = worldEngine.updateWorldConfig(request);
         Map<String, Object> result = new HashMap<>();
@@ -149,7 +149,7 @@ public class DashboardController {
     }
 
     @GetMapping("/town/runtime")
-    /** 返回资源实例、关系、消息、任务和居民的运行态快照。 */
+    // 返回资源实例、关系、消息、任务和居民的运行态快照。
     public Map<String, Object> townRuntime() {
         return runtimeSnapshot();
     }
@@ -204,7 +204,7 @@ public class DashboardController {
         return runtimeSnapshot();
     }
 
-    /** 推进世界一步并返回最新 Agent 状态。 */
+    // 推进世界一步并返回最新 Agent 状态。
     /**
      * @return 推进一步后的世界状态
      */
@@ -220,7 +220,7 @@ public class DashboardController {
         return result;
     }
 
-    /** 返回当前世界和 Agent 的简要状态。 */
+    // 返回当前世界和 Agent 的简要状态。
     /**
      * @return 当前世界状态
      */
@@ -233,7 +233,7 @@ public class DashboardController {
         return result;
     }
 
-    /** 查询最近发生的领域事件。 */
+    // 查询最近发生的领域事件。
     /**
      * @param limit 返回的事件数量上限
      * @return 事件数据列表
@@ -243,7 +243,7 @@ public class DashboardController {
         return buildEvents(limit == null ? dashboard.getEventsDefaultLimit() : limit);
     }
 
-    /** 查询 Agent 当前状态及记忆信息。 */
+    // 查询 Agent 当前状态及记忆信息。
     /**
      * @param memoryLimit 每个 Agent 返回的记忆数量上限
      * @return Agent 数据列表
@@ -253,7 +253,7 @@ public class DashboardController {
         return buildAgents(memoryLimit == null ? dashboard.getDefaultMemoryLimit() : memoryLimit);
     }
 
-    /** 查询当前运行指标。 */
+    // 查询当前运行指标。
     /**
      * @return 运行指标数据
      */
@@ -262,14 +262,14 @@ public class DashboardController {
         return buildMetrics();
     }
 
-    /** 将居民创建或参数校验失败转换为客户端可识别的错误响应。 */
+    // 将居民创建或参数校验失败转换为客户端可识别的错误响应。
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> handleInvalidRequest(IllegalArgumentException exception) {
         return Map.of("error", exception.getMessage());
     }
 
-    /** 构建世界尺寸和 Agent 数量信息。 */
+    // 构建世界尺寸和 Agent 数量信息。
     /**
      * @return 世界信息
      */
@@ -306,7 +306,7 @@ public class DashboardController {
     public record TradeRequest(String buyerId, String sellerId, int price) {}
     public record CombatRequest(String attackerId, String defenderId, int damage) {}
 
-    /** 构建所有 Agent 的详细信息。 */
+    // 构建所有 Agent 的详细信息。
     /**
      * @param memoryLimit 每个 Agent 返回的记忆数量上限
      * @return Agent 数据列表
@@ -317,7 +317,7 @@ public class DashboardController {
                 .toList();
     }
 
-    /** 将 Agent 转换为包含心智和记忆信息的详细数据。 */
+    // 将 Agent 转换为包含心智和记忆信息的详细数据。
     /**
      * @param agent 待转换的 Agent
      * @param memoryLimit 返回的记忆数量上限
@@ -357,7 +357,7 @@ public class DashboardController {
         return map;
     }
 
-    /** 将领域事件历史转换为接口数据。 */
+    // 将领域事件历史转换为接口数据。
     /**
      * @param limit 返回的事件数量上限
      * @return 事件数据列表
@@ -371,7 +371,7 @@ public class DashboardController {
         return events;
     }
 
-    /** 将单个领域事件转换为接口数据并展开事件详情。 */
+    // 将单个领域事件转换为接口数据并展开事件详情。
     /**
      * @param event 待转换的领域事件
      * @return 事件数据
@@ -428,7 +428,7 @@ public class DashboardController {
         return map;
     }
 
-    /** 将记忆条目转换为接口数据。 */
+    // 将记忆条目转换为接口数据。
     /**
      * @param entry 待转换的记忆条目
      * @return 记忆数据
@@ -448,7 +448,7 @@ public class DashboardController {
         return map;
     }
 
-    /** 构建事件、Agent 和服务端时间等运行指标。 */
+    // 构建事件、Agent 和服务端时间等运行指标。
     /**
      * @return 运行指标数据
      */

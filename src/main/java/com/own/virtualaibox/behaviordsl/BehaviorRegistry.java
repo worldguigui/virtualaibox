@@ -14,12 +14,12 @@ import com.own.virtualaibox.domain.agent.Agent;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 行为程序注册表：启动时加载 {@code classpath:agents/*.lambda}，按文件名解析。
+ * 行为程序注册表：启动时加载 classpath:agents/*.lambda，按文件名解析。
  *
- * <p>匹配规则：文件名去掉 {@code .lambda} 后与 Agent 名（忽略大小写）或
- * id 匹配；{@code default.lambda} 作为全局回退；没有匹配（或没有任何文件）时返回
- * {@code null}，运行时回退到内置 {@link com.own.virtualaibox.mind.DefaultPlanCompiler}。
- * 坏文件在启动期 fail-fast：改错 DSL 立刻暴露，而不是在某个 tick 里静默失效。</p>
+ * 匹配规则：文件名去掉 .lambda 后与 Agent 名（忽略大小写）或
+ * id 匹配；default.lambda 作为全局回退；没有匹配（或没有任何文件）时返回
+ * null，运行时回退到内置 com.own.virtualaibox.mind.DefaultPlanCompiler。
+ * 坏文件在启动期 fail-fast：改错 DSL 立刻暴露，而不是在某个 tick 里静默失效。
  */
 @Component
 @Slf4j
@@ -61,7 +61,7 @@ public class BehaviorRegistry {
     /**
      * 解析某 Agent 的行为程序。
      *
-     * @return 命中的程序；无任何匹配（含无 default.lambda）时返回 {@code null}
+     * @return 命中的程序；无任何匹配（含无 default.lambda）时返回 null
      */
     public BehaviorProgram resolve(Agent agent) {
         BehaviorProgram p = programs.get(agent.getName().toLowerCase());

@@ -15,10 +15,10 @@ public class AgentMemory {
     private final String agentId;
     private final MemoryStore memoryStore;
     
-    /** 短期记忆窗口大小（tick数） */
+    // 短期记忆窗口大小（tick数）
     private static final int SHORT_TERM_WINDOW = 20;
     
-    /** 长期记忆保留条件：重要程度 >= 7 或访问频繁 */
+    // 长期记忆保留条件：重要程度 >= 7 或访问频繁
     private static final int IMPORTANCE_THRESHOLD = 7;
     private static final int ACCESS_THRESHOLD = 3;
 

@@ -25,16 +25,16 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 心智控制器：一个 tick 内驱动所有 Agent 的 SECD 运行时，汇总副作用。
  *
- * <p>由 SECD 行为运行时推进 Agent，并汇总其产生的副作用：
+ * 由 SECD 行为运行时推进 Agent，并汇总其产生的副作用：
  * 每个 Agent 的心智（AgentRuntime）在 C 栈上持有跨 tick 的行为程序，
- * 每 tick 推进一步并产出 Effect；LLM 仅在计划耗尽时作为 Oracle 被询问方向。</p>
+ * 每 tick 推进一步并产出 Effect；LLM 仅在计划耗尽时作为 Oracle 被询问方向。
  */
 @Component
 public class MindController {
 
     private final LLMBrain llmBrain;
     private final BehaviorRegistry behaviorRegistry;
-    /** 运行参数（onMeet 步数预算、AgentRuntime 步数预算等）。 */
+    // 运行参数（onMeet 步数预算、AgentRuntime 步数预算等）。
     private final RuntimeProperties runtime;
     private final Map<String, AgentRuntime> runtimes = new ConcurrentHashMap<>();
 
@@ -49,7 +49,7 @@ public class MindController {
         this.runtime = runtime;
     }
 
-    /** 推进所有 Agent 心智一个 tick，返回全部副作用。 */
+    // 推进所有 Agent 心智一个 tick，返回全部副作用。
     public List<Effect> decisionPhase(int tick, World world) {
         WorldState worldState = buildWorldState(tick, world);
         List<Effect> all = new ArrayList<>();
@@ -74,7 +74,7 @@ public class MindController {
         return effects;
     }
 
-    /** 对 self 中断主计划并执行指向 other 的 onMeet 对话（优先使用 DSL 定义，否则使用内置行为）。 */
+    // 对 self 中断主计划并执行指向 other 的 onMeet 对话（优先使用 DSL 定义，否则使用内置行为）。
     private List<Effect> interruptWithMeet(Agent self, Agent other) {
         AgentRuntime agentRuntime = runtimes.computeIfAbsent(self.getId(),
                 id -> new AgentRuntime(self, llmBrain, behaviorRegistry.resolve(self), runtime));
@@ -90,7 +90,7 @@ public class MindController {
         return agentRuntime.runHandler(runtime.getMaxHandlerSteps());
     }
 
-    /** 按 Agent ID 取运行时（S/E/C/D 快照）。 */
+    // 按 Agent ID 取运行时（S/E/C/D 快照）。
     public AgentRuntime getRuntime(String agentId) {
         return runtimes.get(agentId);
     }

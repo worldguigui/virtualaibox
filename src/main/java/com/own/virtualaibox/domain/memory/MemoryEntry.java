@@ -48,7 +48,7 @@ public class MemoryEntry {
     // 相关的其他Agent ID
     private String relatedAgentId;
     
-    /** 记忆分类，作为 MemoryStore 查询和持久化映射的稳定类型。 */
+    // 记忆分类，作为 MemoryStore 查询和持久化映射的稳定类型。
     public enum MemoryType {
         // 观察记忆：看到了什么
         OBSERVATION,

@@ -16,25 +16,25 @@ public class Agent implements EventListener {
     private String name;
     private AgentState state;
 
-    /** 居民稳定的人格、动机、表达方式和知识边界。 */
+    // 居民稳定的人格、动机、表达方式和知识边界。
     private PersonalityProfile personality;
     
-    /** Agent的记忆管理器 */
+    // Agent的记忆管理器
     private AgentMemory memory;
     
-    /** Agent的事件历史 */
+    // Agent的事件历史
     private List<String> eventHistory = new ArrayList<>();
     
-    /** Agent是否活跃 */
+    // Agent是否活跃
     private boolean active = true;
 
-    /** 可用于经济玩法的货币余额。 */
+    // 可用于经济玩法的货币余额。
     private int coins = 100;
 
-    /** 持有的世界物品实例 ID。 */
+    // 持有的世界物品实例 ID。
     private List<String> inventory = new ArrayList<>();
 
-    /** 保留旧的六参数构造方式，并为居民创建通用兜底人格。 */
+    // 保留旧的六参数构造方式，并为居民创建通用兜底人格。
     public Agent(String id, String name, AgentState state, AgentMemory memory,
                  List<String> eventHistory, boolean active) {
         this.id = id;
@@ -46,7 +46,7 @@ public class Agent implements EventListener {
         this.active = active;
     }
 
-    /** 创建带有显式人格配置的居民（人格为 null 时回落到通用兜底人格）。 */
+    // 创建带有显式人格配置的居民（人格为 null 时回落到通用兜底人格）。
     public Agent(String id, String name, AgentState state, PersonalityProfile personality,
                  AgentMemory memory, List<String> eventHistory, boolean active) {
         this.id = id;

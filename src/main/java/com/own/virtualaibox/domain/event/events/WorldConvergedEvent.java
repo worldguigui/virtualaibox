@@ -14,10 +14,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class WorldConvergedEvent extends DomainEvent {
 
-    /** 连续无变化的 tick 数 */
+    // 连续无变化的 tick 数
     private int stableTicks;
 
-    /** 稳定时的世界签名（所有 Agent 位置的摘要，调试用） */
+    // 稳定时的世界签名（所有 Agent 位置的摘要，调试用）
     private String worldSignature;
 
     @Override

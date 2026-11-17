@@ -7,18 +7,16 @@ import java.util.Map;
 import java.util.Stack;
 
 /**
- * SECD 机器的四寄存器状态 {@code { S, E, C, D }}。
+ * SECD 机器的四寄存器状态 { S, E, C, D }。
  *
- * <p>语义（docs/secd-fusion-design-frozen.md §4）：</p>
- * <ul>
- *   <li><b>S</b> 值栈 —— 当前计算过程中的值</li>
- *   <li><b>E</b> 词法环境 / 闭包环境 —— 变量名到值的绑定</li>
- *   <li><b>C</b> 控制栈 —— 当前正在执行的行为程序（指令序列）</li>
- *   <li><b>D</b> 转储栈 —— continuation，被挂起的执行上下文</li>
- * </ul>
+ * 语义（docs/secd-fusion-design-frozen.md §4）：
+ *   S 值栈 —— 当前计算过程中的值
+ *   E 词法环境 / 闭包环境 —— 变量名到值的绑定
+ *   C 控制栈 —— 当前正在执行的行为程序（指令序列）
+ *   D 转储栈 —— continuation，被挂起的执行上下文
  *
- * <p>该状态是可变持有对象（闭包应用恢复时会整体换回 DumpFrame 里的快照），
- * 供 {@link SECD} 驱动单步推进。每个 Agent 持有一份独立实例。</p>
+ * 该状态是可变持有对象（闭包应用恢复时会整体换回 DumpFrame 里的快照），
+ * 供 SECD 驱动单步推进。每个 Agent 持有一份独立实例。
  */
 public class MachineState {
 
@@ -70,7 +68,7 @@ public class MachineState {
         this.d = d;
     }
 
-    /** 从转储帧恢复：整体换回被挂起前的 S/E/C/D（原 SECDMachine 语义）。 */
+    // 从转储帧恢复：整体换回被挂起前的 S/E/C/D（原 SECDMachine 语义）。
     public void restore(DumpFrame frame) {
         this.s = frame.s;
         this.e = frame.e;
@@ -78,7 +76,7 @@ public class MachineState {
         this.d = frame.d;
     }
 
-    /** 清空所有寄存器。 */
+    // 清空所有寄存器。
     public void clear() {
         s.clear();
         e.clear();
@@ -86,14 +84,14 @@ public class MachineState {
         d.clear();
     }
 
-    /** 控制栈与转储栈均为空，即求解结束。 */
+    // 控制栈与转储栈均为空，即求解结束。
     public boolean isTerminated() {
         return c.isEmpty() && d.isEmpty();
     }
 
     /**
      * 捕获当前状态的字符串快照（排除不断增长的 D 栈），
-     * 用于活锁/回环检测。移植自原 {@code captureStateSnapshot()}。
+     * 用于活锁/回环检测。移植自原 captureStateSnapshot()。
      */
     public String captureState() {
         StringBuilder sb = new StringBuilder();

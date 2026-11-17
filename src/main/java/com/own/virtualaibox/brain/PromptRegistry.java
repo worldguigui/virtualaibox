@@ -10,22 +10,22 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 /**
- * 提示词模板注册表：启动时加载 {@code classpath:prompts/decision/*.txt}。
+ * 提示词模板注册表：启动时加载 classpath:prompts/decision/*.txt。
  *
- * <p>只有使用者需要反复调优的内容才外置为文件：intro（世界观与任务目标）、task（决策契约与输出格式）。
- * 状态注入、他人列表、记忆段、人格格式这些文本是 {@link LLMBrain} 的常量，与代码绑定，不能当普通文案独立修改：
- * 每个占位符（{tick}、{name} 等）都由代码取值填充，想要在状态段加一行“你的朝向：{direction}”，代码必须新增朝向的取值和替换逻辑，否则占位符永远填不上。</p>
+ * 只有使用者需要反复调优的内容才外置为文件：intro（世界观与任务目标）、task（决策契约与输出格式）。
+ * 状态注入、他人列表、记忆段、人格格式这些文本是 LLMBrain 的常量，与代码绑定，不能当普通文案独立修改：
+ * 每个占位符（{tick}、{name} 等）都由代码取值填充，想要在状态段加一行“你的朝向：{direction}”，代码必须新增朝向的取值和替换逻辑，否则占位符永远填不上。
  *
- * <p>每个模板加载后会去掉首尾空白；段落之间的空行由 {@link LLMBrain} 拼接时统一添加。
- * 这样，编辑器保存文件时自动增删的末尾换行，不会改变最终发给大模型的提示词。</p>
+ * 每个模板加载后会去掉首尾空白；段落之间的空行由 LLMBrain 拼接时统一添加。
+ * 这样，编辑器保存文件时自动增删的末尾换行，不会改变最终发给大模型的提示词。
  */
 @Component
 public class PromptRegistry {
 
-    /** 模板目录（classpath 相对路径）。 */
+    // 模板目录（classpath 相对路径）。
     public static final String TEMPLATE_DIR = "prompts/decision";
 
-    /** 必需模板名，缺一不可。 */
+    // 必需模板名，缺一不可。
     public static final List<String> REQUIRED = List.of("intro", "task");
 
     private final Map<String, String> templates = new HashMap<>();
@@ -54,7 +54,7 @@ public class PromptRegistry {
         }
     }
 
-    /** 取模板文本（首尾空白已裁剪；缺名即抛错）。 */
+    // 取模板文本（首尾空白已裁剪；缺名即抛错）。
     public String get(String name) {
         String template = templates.get(name);
         if (template == null) {

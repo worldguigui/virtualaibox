@@ -7,7 +7,7 @@ import java.util.Stack;
 
 /**
  * 转储帧（continuation）：闭包应用时挂起的调用方机器状态快照。
- * 移植自 lambdaexpr 的 {@code DumpItem}，语义保持一致：
+ * 移植自 lambdaexpr 的 DumpItem，语义保持一致：
  * 恢复时把当前 S/E/C/D 整体换回该帧保存的快照。
  */
 public class DumpFrame {

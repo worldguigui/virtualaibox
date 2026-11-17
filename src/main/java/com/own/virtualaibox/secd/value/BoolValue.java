@@ -1,11 +1,11 @@
 package com.own.virtualaibox.secd.value;
 
 /**
- * 布尔值。toString 为 LISP/Scheme 风格的 {@code #t} / {@code #f}。
+ * 布尔值。toString 为 LISP/Scheme 风格的 #t / #f。
  *
- * <p>真值规则（docs/secd-fusion-design-frozen.md §17.2）：仅 {@code #f} 为假，其余一切值
- * （含 {@code 0}、{@code ""}、AgentRef）为真。这使 {@code if} 与"无对象 → #f"的
- * 感知原语（如 {@code (closest)}）可直接组合。</p>
+ * 真值规则（docs/secd-fusion-design-frozen.md §17.2）：仅 #f 为假，其余一切值
+ * （含 0、""、AgentRef）为真。这使 if 与"无对象 → #f"的
+ * 感知原语（如 (closest)）可直接组合。
  */
 public class BoolValue implements Value {
     public final boolean val;
@@ -14,7 +14,7 @@ public class BoolValue implements Value {
         this.val = val;
     }
 
-    /** SECD 真值判定：仅 #f 为假，其余皆真。 */
+    // SECD 真值判定：仅 #f 为假，其余皆真。
     public static boolean isTruthy(Value v) {
         return !(v instanceof BoolValue b && !b.val);
     }

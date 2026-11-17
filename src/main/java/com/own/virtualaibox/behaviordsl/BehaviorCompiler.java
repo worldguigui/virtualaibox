@@ -32,35 +32,33 @@ import com.own.virtualaibox.secd.value.Value;
 import com.own.virtualaibox.secd.value.VoidValue;
 
 /**
- * 行为 DSL 编译器：把 {@code *.lambda} 源文本编译为 {@link BehaviorProgram}。
+ * 行为 DSL 编译器：把 *.lambda 源文本编译为 BehaviorProgram。
  *
- * <p>管线（docs §10）：{@code .lambda → ANTLR 解析 → 本类编译 → SECD → Effect → World}。
- * 语法由 {@code src/main/antlr4/.../BehaviorDSL.g4} 生成解析器，本类只做
- * "语法树 → SECD Instruction" 的语义编译与静态校验。</p>
+ * 管线（docs §10）：.lambda → ANTLR 解析 → 本类编译 → SECD → Effect → World。
+ * 语法由 src/main/antlr4/.../BehaviorDSL.g4 生成解析器，本类只做
+ * "语法树 → SECD Instruction" 的语义编译与静态校验。
  *
- * <p>语义要点：</p>
- * <ul>
- *   <li>原语（move/speak/remember/ask-llm/add/mul/succ/sqr/比较/感知）编译为
- *       {@code InstConst(OpValue)}，柯里化应用；应用 {@code (f a b)} 左结合展开为
- *       {@code ((f a) b)}；零参调用 {@code (f)} 应用一次到 unit（VoidValue）；</li>
- *   <li>{@code let x = e in b} 编译为 {@code apply(λx.b, e)}（β 归约），不占新 D 帧；</li>
- *   <li>{@code if/then/else} 编译为 {@code [cond, InstIfThenElse(then, else)]}，
+ * 语义要点：
+ *   原语（move/speak/remember/ask-llm/add/mul/succ/sqr/比较/感知）编译为
+ *       InstConst(OpValue)，柯里化应用；应用 (f a b) 左结合展开为
+ *       ((f a) b)；零参调用 (f) 应用一次到 unit（VoidValue）；
+ *   let x = e in b 编译为 apply(λx.b, e)（β 归约），不占新 D 帧；
+ *   if/then/else 编译为 [cond, InstIfThenElse(then, else)]，
  *       条件只弹 S 顶一次并把选中分支压入 C，不占新 D 帧（docs §17.5）；真值遵循
- *       Scheme 风格——仅 {@code #f} 为假，其余（0、""、AgentRef 等）皆真；</li>
- *   <li>def 的顶层引用在编译期以自由变量形式记录，编译期按依赖序把 def 求值为闭包值
- *       （{@link SECD} 运行编译指令），运行时作为 E 基底；循环/未知引用在加载期报错。</li>
- * </ul>
+ *       Scheme 风格——仅 #f 为假，其余（0、""、AgentRef 等）皆真；
+ *   def 的顶层引用在编译期以自由变量形式记录，编译期按依赖序把 def 求值为闭包值
+ *       （SECD 运行编译指令），运行时作为 E 基底；循环/未知引用在加载期报错。
  */
 public class BehaviorCompiler {
 
-    /** 运行时原语集合（对应 WorldOpEvaluator / ArithmeticOpEvaluator，含感知和比较）。 */
+    // 运行时原语集合（对应 WorldOpEvaluator / ArithmeticOpEvaluator，含感知和比较）。
     private static final Set<String> OPS = Set.of(
             "move", "speak", "remember", "ask-llm",
             "add", "mul", "sub", "div", "succ", "sqr", "pred", "zerop",
             "eq", "lt", "gt", "le", "ge",
             "self", "closest", "dist-to", "name-of", "direction-of");
 
-    /** plan 中允许的自由变量（运行时由 LLM Oracle 注入 E）。 */
+    // plan 中允许的自由变量（运行时由 LLM Oracle 注入 E）。
     private static final Set<String> RUNTIME_VARS = Set.of("dx", "dy");
 
     /**
@@ -135,7 +133,7 @@ public class BehaviorCompiler {
         return prog;
     }
 
-    /** ANTLR 语法错误收集：带行列号，便于定位 .lambda 文件错误。 */
+    // ANTLR 语法错误收集：带行列号，便于定位 .lambda 文件错误。
     private static class SyntaxErrors extends BaseErrorListener {
         final List<String> errors = new ArrayList<>();
 
@@ -149,7 +147,7 @@ public class BehaviorCompiler {
 
     // ---------------------------------------------------------- 语义编译
 
-    /** 一段编译产物：指令 + 顶层自由名称（非局部、非原语的名字引用）。 */
+    // 一段编译产物：指令 + 顶层自由名称（非局部、非原语的名字引用）。
     private record CompiledExpr(Instruction code, Set<String> freeTopNames) {
     }
 
@@ -253,7 +251,7 @@ public class BehaviorCompiler {
         return compileName(atom.NAME().getText(), scope);
     }
 
-    /** 应用实参：原子 → compileAtom；括号表达式 → compileGrouped。 */
+    // 应用实参：原子 → compileAtom；括号表达式 → compileGrouped。
     private CompiledExpr compileCallArg(BehaviorDSLParser.CallArgContext c, Set<String> scope) {
         if (c.atom() != null) {
             return compileAtom(c.atom(), scope);
@@ -261,7 +259,7 @@ public class BehaviorCompiler {
         return compileGrouped(c.expr(), scope);
     }
 
-    /** 括号分组 (expr)：inner 为单个原子原语 → 零参调用；否则原样编译。 */
+    // 括号分组 (expr)：inner 为单个原子原语 → 零参调用；否则原样编译。
     private CompiledExpr compileGrouped(BehaviorDSLParser.ExprContext inner, Set<String> scope) {
         if (inner.atom() != null && inner.atom().NAME() != null
                 && OPS.contains(inner.atom().NAME().getText())) {
@@ -272,7 +270,7 @@ public class BehaviorCompiler {
         return compileExpr(inner, scope);
     }
 
-    /** 裸名字的编译：局部变量 → InstVar；原语 → 常量操作符；否则顶层自由变量。 */
+    // 裸名字的编译：局部变量 → InstVar；原语 → 常量操作符；否则顶层自由变量。
     private CompiledExpr compileName(String name, Set<String> scope) {
         if (scope.contains(name)) {
             return new CompiledExpr(new InstVar(name), Set.of());
@@ -326,7 +324,7 @@ public class BehaviorCompiler {
         return value;
     }
 
-    /** 用纯算术求值器运行一段指令，得到 def 的值（λ def 得到闭包）。 */
+    // 用纯算术求值器运行一段指令，得到 def 的值（λ def 得到闭包）。
     private Value eval(Instruction code, Map<String, Value> env) {
         MachineState ms = new MachineState(new java.util.Stack<>(), new HashMap<>(env),
                 new java.util.Stack<>(), new java.util.Stack<>());
@@ -344,7 +342,7 @@ public class BehaviorCompiler {
         return new IllegalArgumentException(sourceName + "：" + msg);
     }
 
-    /** 字符串字面量去引号 + 极简转义。 */
+    // 字符串字面量去引号 + 极简转义。
     private static String unescape(String raw) {
         if (raw.length() < 2) {
             return raw;

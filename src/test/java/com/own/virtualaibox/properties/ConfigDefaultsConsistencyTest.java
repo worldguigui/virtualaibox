@@ -22,19 +22,19 @@ import com.own.virtualaibox.domain.world.WorldConfig;
 
 /**
  * 机制化校验 ADR-0005 决策 1 的"双份默认值"约定：application.yml 的
- * {@code virtual-ai-box.*} 默认值必须与各配置类的 Java 字段初始化器
- * （即 {@code defaults()} 纯代码路径）保持一致。
+ * virtual-ai-box.* 默认值必须与各配置类的 Java 字段初始化器
+ * （即 defaults() 纯代码路径）保持一致。
  *
- * <p>原理：用 Spring Boot 的 {@link Binder} 在容器之外把 yml 绑定到配置类
+ * 原理：用 Spring Boot 的 Binder 在容器之外把 yml 绑定到配置类
  * （与容器的 ConfigurationProperties 绑定同一套算法：从 Java 初始值出发、
- * 逐字段覆盖 yml 中出现的键），再与 {@code defaults()} 逐字段比对。
+ * 逐字段覆盖 yml 中出现的键），再与 defaults() 逐字段比对。
  * yml 缺键时绑定结果保留 Java 初始值（设计内的回落），不会误报；
  * 任一侧单独改动造成漂移时本测试立即失败。REQUIRED_KEYS 清单另防
- * yml 键拼写错误被 Binder 静默忽略后"看似一致"的假阴性。</p>
+ * yml 键拼写错误被 Binder 静默忽略后"看似一致"的假阴性。
  */
 class ConfigDefaultsConsistencyTest {
 
-    /** yml 中必须出现的关键键（值对不对由下面的绑定比对管，键必须在）。 */
+    // yml 中必须出现的关键键（值对不对由下面的绑定比对管，键必须在）。
     private static final String[] REQUIRED_KEYS = {
             "virtual-ai-box.world.name",
             "virtual-ai-box.world.world-description",
@@ -82,7 +82,7 @@ class ConfigDefaultsConsistencyTest {
         ymlFlat = flat;
     }
 
-    /** 在容器之外按 ConfigurationProperties 同款算法把 yml 绑定到配置类。 */
+    // 在容器之外按 ConfigurationProperties 同款算法把 yml 绑定到配置类。
     private static <T> T bind(String prefix, Class<T> type) {
         Iterable<ConfigurationPropertySource> sources =
                 ConfigurationPropertySources.from(new MapPropertySource("application.yml", ymlFlat));

@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 按固定顺序推进世界 tick，并协调决策、效果执行、交互检测和收敛检测。
- * Agent 的心智运行时只产生 {@link Effect}，世界状态由 {@link EffectExecutor} 统一更新。
+ * Agent 的心智运行时只产生 Effect，世界状态由 EffectExecutor 统一更新。
  */
 @Component
 @Slf4j
@@ -35,10 +35,10 @@ public class TickSchedule {
     private final EffectExecutor effectExecutor;
     private final EventBus eventBus;
     private final ConvergenceMonitor convergenceMonitor;
-    /** 运行参数（相遇距离、事件扫描上限）。 */
+    // 运行参数（相遇距离、事件扫描上限）。
     private final RuntimeProperties runtime;
 
-    /** 当前已处于相遇状态的 pair（id1|id2 排序键），用于"首次相遇才对话"去抖。 */
+    // 当前已处于相遇状态的 pair（id1|id2 排序键），用于"首次相遇才对话"去抖。
     private final Set<String> activeMeetings = ConcurrentHashMap.newKeySet();
 
     /**
@@ -140,9 +140,9 @@ public class TickSchedule {
     /**
      * 检测 Agent 相遇，发布相遇事件，并为首次相遇生成对话副作用。
      *
-     * <p>检测相遇 → 发布 AgentMetEvent → <b>首次相遇</b>触发 onMeet 对话
+     * 检测相遇 → 发布 AgentMetEvent → 首次相遇触发 onMeet 对话
       * （双方各中断当前 SECD 主计划、执行对话程序、经 D 栈恢复），
-      * 对话副作用在当前 tick 落地。</p>
+      * 对话副作用在当前 tick 落地。
     *
       * @param tick 当前 tick 编号
       * @param world 用于查找 Agent 和应用对话副作用的世界
@@ -188,7 +188,7 @@ public class TickSchedule {
     /**
      * 检查执行交互后的世界状态及 Agent 运行时状态，并发布收敛相关事件。
      *
-     * <p>观察执行后的世界状态，检测不动点（WorldConverged）、Agent 卡死（AgentStuck）、
+     * 观察执行后的世界状态，检测不动点（WorldConverged）、Agent 卡死（AgentStuck）、
       * 位置周期（AgentLoop）与 SECD D 栈膨胀（无限归约启发式），发布对应事件。
       * 检测在交互处理之后、发布 tick 结束事件之前进行，
       * 使收敛事件计入本 tick 的事件统计。

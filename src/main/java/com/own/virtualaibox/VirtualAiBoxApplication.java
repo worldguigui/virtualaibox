@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-/** VirtualAIBox 的 Spring Boot 应用入口。 */
+// VirtualAIBox 的 Spring Boot 应用入口。
 public class VirtualAiBoxApplication {
 
-    /** 启动 Spring Boot 应用。 */
+    // 启动 Spring Boot 应用。
     /**
      * @param args 应用启动参数
      */

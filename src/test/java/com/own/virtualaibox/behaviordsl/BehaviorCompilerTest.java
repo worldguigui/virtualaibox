@@ -28,20 +28,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 行为 DSL 编译与运行时融合验证，覆盖条件、感知和方向移动。
  *
- * <p>验证点包括 DSL 编译、运行时执行、条件、感知和方向移动：</p>
- * <ul>
- *   <li>编译：{@code .lambda} 文本 → {@link BehaviorProgram}（plan / defs / onMeet）；</li>
- *   <li>fail-fast：语法错误、缺 plan、未知名称、def 循环都在加载期报错；</li>
- *   <li>运行时：plan 内联引用 dx/dy（LLM Oracle 注入），tick 产出 MoveEffect；</li>
- *   <li>onMeet：DSL 的 λ 闭包经 interrupt/runHandler 跑完 greet + persona；</li>
- *   <li>条件与感知：if/then/else 编译为 InstIfThenElse（真值 Scheme 风格，仅 #f 为假）；
+ * 验证点包括 DSL 编译、运行时执行、条件、感知和方向移动：
+ *   编译：.lambda 文本 → BehaviorProgram（plan / defs / onMeet）；
+ *   fail-fast：语法错误、缺 plan、未知名称、def 循环都在加载期报错；
+ *   运行时：plan 内联引用 dx/dy（LLM Oracle 注入），tick 产出 MoveEffect；
+ *   onMeet：DSL 的 λ 闭包经 interrupt/runHandler 跑完 greet + persona；
+ *   条件与感知：if/then/else 编译为 InstIfThenElse（真值 Scheme 风格，仅 #f 为假）；
  *       感知原语（closest/dist-to/direction-of 等）查询注入的只读快照，无对象 → #f；
- *       move north 与 move dx dy 统一为 MoveEffect(deltaX, deltaY)。</li>
- * </ul>
+ *       move north 与 move dx dy 统一为 MoveEffect(deltaX, deltaY)。
  */
 class BehaviorCompilerTest {
 
-    /** 固定返回向东 (1,0) 的假预言机，使测试确定性。 */
+    // 固定返回向东 (1,0) 的假预言机，使测试确定性。
     private static class FakeBrain extends LLMBrain {
         FakeBrain() {
             super(null, com.own.virtualaibox.properties.PromptProperties.defaults(), com.own.virtualaibox.properties.RuntimeProperties.defaults());

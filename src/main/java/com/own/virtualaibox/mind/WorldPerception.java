@@ -8,14 +8,14 @@ import com.own.virtualaibox.secd.value.AgentRefValue;
 import java.util.Map;
 
 /**
- * 基于 {@link WorldState} 快照的 {@link Perception} 实现（docs §17.3）。
+ * 基于 WorldState 快照的 Perception 实现（docs §17.3）。
  *
- * <p>只读：全部查询都不修改任何状态；持有的 worldState 是一次 tick 的世界快照。
- * 感知范围（曼哈顿距离）由构造注入，来自 {@code virtual-ai-box.runtime.perception-range}。</p>
+ * 只读：全部查询都不修改任何状态；持有的 worldState 是一次 tick 的世界快照。
+ * 感知范围（曼哈顿距离）由构造注入，来自 virtual-ai-box.runtime.perception-range。
  */
 public class WorldPerception implements Perception {
 
-    /** 感知范围（曼哈顿距离）：超过该距离视为"感知不到"。 */
+    // 感知范围（曼哈顿距离）：超过该距离视为"感知不到"。
     private final int perceptionRange;
 
     private final Agent selfAgent;

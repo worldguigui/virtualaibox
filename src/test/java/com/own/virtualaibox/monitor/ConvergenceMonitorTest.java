@@ -25,20 +25,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 验证收敛 / 活锁检测。
  *
- * <p>验收点"构造'原地打转 / 周期振荡'Agent，能检出"逐一覆盖：</p>
- * <ul>
- *   <li>原地不动（含被边界钳制）→ {@code agent.stuck}；</li>
- *   <li>周期振荡 A→B→A→B… → {@code agent.loop}；</li>
- *   <li>整个世界长期无变化 → {@code world.converged}；</li>
- *   <li>SECD D 栈膨胀（无限归约启发式）→ {@code agent.loop}（reason=d-stack）。</li>
- * </ul>
+ * 验收点"构造'原地打转 / 周期振荡'Agent，能检出"逐一覆盖：
+ *   原地不动（含被边界钳制）→ agent.stuck；
+ *   周期振荡 A→B→A→B… → agent.loop；
+ *   整个世界长期无变化 → world.converged；
+ *   SECD D 栈膨胀（无限归约启发式）→ agent.loop（reason=d-stack）。
  *
- * <p>检测器只消费 tick + 世界状态（Agent 位置），故测试直接驱动
- * {@link ConvergenceMonitor#monitor}，手动改写 AgentState 模拟各类运动模式。</p>
+ * 检测器只消费 tick + 世界状态（Agent 位置），故测试直接驱动
+ * ConvergenceMonitor#monitor，手动改写 AgentState 模拟各类运动模式。
  */
 class ConvergenceMonitorTest {
 
-    /** 假预言机：与 AgentRuntimeTest 同构，避免测试触发真实网络。 */
+    // 假预言机：与 AgentRuntimeTest 同构，避免测试触发真实网络。
     private static class FakeBrain extends LLMBrain {
         FakeBrain() {
             super(null, com.own.virtualaibox.properties.PromptProperties.defaults(), com.own.virtualaibox.properties.RuntimeProperties.defaults());
@@ -60,7 +58,7 @@ class ConvergenceMonitorTest {
         }
     }
 
-    /** 全局监听：收集所有发布的事件，按事件类型计数。 */
+    // 全局监听：收集所有发布的事件，按事件类型计数。
     private static class CapturingListener implements EventListener {
         final List<DomainEvent> events = new CopyOnWriteArrayList<>();
 

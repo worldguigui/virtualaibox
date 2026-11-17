@@ -15,10 +15,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class InMemoryMemoryStore implements MemoryStore {
     
-    /** Agent ID -> 记忆列表 */
+    // Agent ID -> 记忆列表
     private final Map<String, List<MemoryEntry>> memoryIndex = new ConcurrentHashMap<>();
     
-    /** 记忆ID -> 记忆对象，快速查询 */
+    // 记忆ID -> 记忆对象，快速查询
     private final Map<String, MemoryEntry> memoryCache = new ConcurrentHashMap<>();
     
     @Override

@@ -28,8 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 小镇领域编排器：负责配置映射、居民生命周期、tick 收尾和仪表盘领域命令。
  *
- * <p>心智决策仍由 {@link TickSchedule} 和 EffectExecutor 负责；本类只在命令或
- * tick 收尾阶段修改资源、消息、关系、任务和配置等小镇状态。</p>
+ * 心智决策仍由 TickSchedule 和 EffectExecutor 负责；本类只在命令或
+ * tick 收尾阶段修改资源、消息、关系、任务和配置等小镇状态。
  */
 public class WorldEngine {
 
@@ -37,7 +37,7 @@ public class WorldEngine {
     private final TickSchedule tickSchedule;
     private final EventBus eventBus;
     private final MemoryStore memoryStore;
-    /** 运行参数（通用兜底人格等）。 */
+    // 运行参数（通用兜底人格等）。
     private final RuntimeProperties runtime;
     private WorldConfig worldConfig;
     private final World world;
@@ -111,12 +111,12 @@ public class WorldEngine {
         log.info("WorldEngine: Added agent {} with id {}", agent.getName(), agent.getId());
     }
 
-    /** 创建并加入一个拥有独立记忆和事件监听能力的居民。 */
+    // 创建并加入一个拥有独立记忆和事件监听能力的居民。
     public Agent createAndAddAgent(String name, Integer x, Integer y) {
         return createAndAddAgent(name, x, y, null);
     }
 
-    /** 更新现有 Agent 的基本信息与人格。 */
+    // 更新现有 Agent 的基本信息与人格。
     public Agent updateAgent(String agentId, String name, Integer x, Integer y, PersonalityProfile personality) {
         Agent agent = world.getAgents().stream()
                 .filter(existing -> existing.getId().equals(agentId))
@@ -166,7 +166,7 @@ public class WorldEngine {
         }
     }
 
-    /** 在合法位置生成资源实例，并发布 town.action 审计事件。 */
+    // 在合法位置生成资源实例，并发布 town.action 审计事件。
     public synchronized WorldItem spawnItem(String definitionId, int x, int y, int quantity) {
         requireRule("itemSpawning");
         if (worldConfig.getItems().stream().noneMatch(item -> item.getId().equals(definitionId))) {
@@ -183,7 +183,7 @@ public class WorldEngine {
         return item;
     }
 
-    /** 只有位于资源点且资源未被占有的居民才能拾取资源。 */
+    // 只有位于资源点且资源未被占有的居民才能拾取资源。
     public synchronized WorldItem pickupItem(String agentId, String itemId) {
         Agent agent = requireAgent(agentId);
         WorldItem item = world.getItemInstances().stream().filter(candidate -> candidate.getId().equals(itemId))
@@ -197,7 +197,7 @@ public class WorldEngine {
         return item;
     }
 
-    /** 校验双方身份并记录一条居民消息。 */
+    // 校验双方身份并记录一条居民消息。
     public synchronized TownMessage sendMessage(String fromAgentId, String toAgentId, String content) {
         requireAgent(fromAgentId);
         requireAgent(toAgentId);
@@ -208,7 +208,7 @@ public class WorldEngine {
         return message;
     }
 
-    /** 创建或调整有向居民关系，并将信任/好感限制在 -100 到 100。 */
+    // 创建或调整有向居民关系，并将信任/好感限制在 -100 到 100。
     public synchronized SocialRelation updateRelation(String agentId, String otherAgentId, int trustDelta, int affinityDelta) {
         requireAgent(agentId);
         requireAgent(otherAgentId);
@@ -226,7 +226,7 @@ public class WorldEngine {
         return relation;
     }
 
-    /** 创建一个 open 状态的任务。 */
+    // 创建一个 open 状态的任务。
     public synchronized TownQuest createQuest(String title, String description, int reward) {
         if (title == null || title.isBlank() || reward < 0) throw new IllegalArgumentException("invalid quest");
         TownQuest quest = TownQuest.open(title.trim(), description == null ? "" : description.trim(), reward);
@@ -235,7 +235,7 @@ public class WorldEngine {
         return quest;
     }
 
-    /** 将 open 任务分配给指定居民。 */
+    // 将 open 任务分配给指定居民。
     public synchronized TownQuest assignQuest(String questId, String agentId) {
         Agent agent = requireAgent(agentId);
         TownQuest quest = world.getQuests().stream().filter(candidate -> candidate.getId().equals(questId))
@@ -247,7 +247,7 @@ public class WorldEngine {
         return quest;
     }
 
-    /** 完成 assigned 任务并向执行居民发放货币奖励。 */
+    // 完成 assigned 任务并向执行居民发放货币奖励。
     public synchronized TownQuest completeQuest(String questId) {
         TownQuest quest = world.getQuests().stream().filter(candidate -> candidate.getId().equals(questId))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("quest not found: " + questId));
@@ -259,7 +259,7 @@ public class WorldEngine {
         return quest;
     }
 
-    /** 在 trading 规则开启时转移货币；当前尚未绑定具体物品转移。 */
+    // 在 trading 规则开启时转移货币；当前尚未绑定具体物品转移。
     public synchronized void trade(String buyerId, String sellerId, int price) {
         Agent buyer = requireAgent(buyerId);
         Agent seller = requireAgent(sellerId);
@@ -270,7 +270,7 @@ public class WorldEngine {
         publishTownAction("trade.completed", buyerId, sellerId, "price=" + price);
     }
 
-    /** 在 combat 规则开启时记录战斗动作；当前尚未结算生命值。 */
+    // 在 combat 规则开启时记录战斗动作；当前尚未结算生命值。
     public synchronized void combat(String attackerId, String defenderId, int damage) {
         Agent attacker = requireAgent(attackerId);
         requireAgent(defenderId);
@@ -304,7 +304,7 @@ public class WorldEngine {
         eventBus.publish(event);
     }
 
-    /** 创建并加入一个拥有独立记忆和事件监听能力的居民，并允许显式覆盖人格。 */
+    // 创建并加入一个拥有独立记忆和事件监听能力的居民，并允许显式覆盖人格。
     public Agent createAndAddAgent(String name, Integer x, Integer y, PersonalityProfile personality) {
         String normalizedName = name == null || name.isBlank()
                 ? "居民-" + (world.getAgents().size() + 1)

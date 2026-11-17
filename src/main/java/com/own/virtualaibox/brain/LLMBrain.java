@@ -22,53 +22,51 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LLMBrain {
 
-    /** ask-llm 失败哨兵文本：Oracle 调用异常时压入 S 栈，行为程序可用 eq 检测。 */
+    // ask-llm 失败哨兵文本：Oracle 调用异常时压入 S 栈，行为程序可用 eq 检测。
     public static final String ORACLE_UNAVAILABLE = "[oracle-unavailable]";
 
-    // ---------------------------------------------------------------- 提示词结构脚手架
-    // 与填充逻辑强耦合的段落（占位符语义、字段格式由代码定义）——属代码而非配置，
-    // 常量紧邻使用处，随代码评审。可调的"政策文本"（intro/task）在 prompts/decision/*.txt。
-
-    /** 世界设定段：描述/规则/可用资源（三项均空时整段省略；段尾空行由本常量负责）。 */
+    // ------------------------------- 提示词结构脚手架 -------------------------------
+    //
+    // 世界设定段：描述/规则/可用资源
     private static final String WORLD_SECTION = "=== 世界描述与规则 ===\n"
             + "世界设定：{worldDescription}\n"
             + "规则：{rules}\n"
             + "可用资源定义：{itemDefinitions}\n\n";
 
-    /** 当前状态段（段尾空行由本常量负责）。 */
+    // 当前状态段
     private static final String STATE_SECTION = "=== 当前状态 ===\n"
             + "- 当前时间tick：{tick}\n"
             + "- 你的名字：{name}\n"
             + "- 你的位置：({x}, {y})\n\n";
 
-    /** 稳定人格段（内容为空时整段省略）。 */
+    // 稳定人格段（内容为空时整段省略）。
     private static final String PERSONALITY_SECTION = "=== 你的稳定人格 ===\n{personality}\n\n";
 
-    /** 其他居民列表段标题（段首换行由本常量负责）。 */
+    // 其他居民列表段标题
     private static final String OTHERS_SECTION_HEADER = "=== 世界中的其他智能体 ===\n";
 
-    /** 其他居民列表单行模板（行尾换行由本常量负责）。 */
+    // 其他居民列表单行模板
     private static final String OTHERS_LINE = "- {name} 位于 ({x}, {y})\n";
 
-    /** 记忆段（段首换行由本常量负责；内容为空时整段省略）。 */
+    // 记忆段（内容为空时整段省略）。
     private static final String MEMORY_SECTION = "\n=== 你的记忆 ===\n{memory}";
 
     private final ChatModel chatModel;
     private final JsonMapper jsonMapper;
     private final Random random;
-    /** 提示词行为值（virtual-ai-box.prompt 短标量）。 */
+    // 提示词行为值（virtual-ai-box.prompt）。
     private final PromptProperties prompt;
-    /** 移动钳制等运行参数（virtual-ai-box.runtime）。 */
+    // 移动钳制等运行参数（virtual-ai-box.runtime）。
     private final RuntimeProperties runtime;
-    /** 决策提示词模板（classpath:prompts/decision/*.txt，加载时已裁剪首尾空白）。 */
+    // 决策提示词模板（classpath:prompts/decision/*.txt，加载时已裁剪首尾空白）。
     private final PromptRegistry prompts;
 
-    /** 便利构造器：从 classpath 加载默认模板（测试/无 Spring 装配路径）。 */
+    // 便利构造器：从 classpath 加载默认模板
     public LLMBrain(ChatModel chatModel, PromptProperties prompt, RuntimeProperties runtime) {
         this(chatModel, prompt, runtime, new PromptRegistry());
     }
 
-    /** Spring 装配入口。 */
+    // Spring 装配入口。
     @Autowired
     public LLMBrain(ChatModel chatModel, PromptProperties prompt, RuntimeProperties runtime,
                     PromptRegistry prompts) {
@@ -101,7 +99,7 @@ public class LLMBrain {
 
 
     /**
-     * 拼装决策提示词：intro/task 两段"政策文本"取自 {@link PromptRegistry}
+     * 拼装决策提示词：intro/task 两段"政策文本"取自 PromptRegistry
      * （文件文本已裁剪首尾空白），脚手架段取自类常量；段间排版由本方法与
      * 各常量共同负责；人格/记忆段内容为空时整段省略。
      */
@@ -148,7 +146,7 @@ public class LLMBrain {
         return sb.toString();
     }
 
-    /** 按 OTHERS_LINE 模板生成其他居民列表文本（每行自带换行）。 */
+    // 按 OTHERS_LINE 模板生成其他居民列表文本（每行自带换行）。
     private String buildOthers(Agent agent, WorldState worldState) {
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, AgentState> entry : worldState.getAgentStates().entrySet()) {
@@ -164,7 +162,7 @@ public class LLMBrain {
         return sb.toString();
     }
 
-    /** 占位符替换：{key} → value。 */
+    // 占位符替换：{key} → value。
     private String fill(String template, Map<String, String> values) {
         String result = template;
         for (Map.Entry<String, String> entry : values.entrySet()) {
@@ -179,8 +177,8 @@ public class LLMBrain {
 
     /**
       * 直接咨询预言机，供 SECD 的 ask-llm 原语使用。
-     * 与 {@link #decideAction} 的区别：不做 JSON 决策解析，原样返回模型文本。
-     * 调用异常时返回 {@link #ORACLE_UNAVAILABLE} 哨兵文本，
+     * 与 #decideAction 的区别：不做 JSON 决策解析，原样返回模型文本。
+     * 调用异常时返回 #ORACLE_UNAVAILABLE 哨兵文本，
      * 不抛出——单居民计划内降级，绝不终止整个 tick；行为程序可用 eq 检测哨兵。
      */
     public String chat(String userPrompt) {

@@ -16,23 +16,23 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 纯算术操作符求值器，移植自 lambdaexpr {@code Arithmetic}（教材 δ 归约）。
+ * 纯算术操作符求值器，移植自 lambdaexpr Arithmetic（教材 δ 归约）。
  * 默认实现，无任何世界副作用。
  *
- * <p>支持的纯原语（ADR-0006 补齐 lambdaexpr 全集）：
- * 一元 {@code sqr}、{@code succ}、{@code pred}、{@code zerop}；
- * 二元 {@code add}、{@code mul}、{@code sub}、{@code div}（柯里化；除零抛
- * {@link SecdEvalException}）。当实参不是整数时构造延迟闭包以便与丘奇数等纯 λ 表达式交互。
- * {@code zerop} 返回 {@link BoolValue}——与 lambdaexpr 的 1/0 是<b>有意分歧</b>：
- * 本机比较原语一律返回 BoolValue，且 DSL 真值规则为仅 {@code #f} 为假。</p>
+ * 支持的纯原语（ADR-0006 补齐 lambdaexpr 全集）：
+ * 一元 sqr、succ、pred、zerop；
+ * 二元 add、mul、sub、div（柯里化；除零抛
+ * SecdEvalException）。当实参不是整数时构造延迟闭包以便与丘奇数等纯 λ 表达式交互。
+ * zerop 返回 BoolValue——与 lambdaexpr 的 1/0 是有意分歧：
+ * 本机比较原语一律返回 BoolValue，且 DSL 真值规则为仅 #f 为假。
  *
- * <p>支持比较原语：二元 {@code eq/lt/gt/le/ge} → {@link BoolValue}；
- * {@code eq} 支持 Int/String/AgentRef（按 id）/Direction，类型不符的其余比较 → {@code #f}
- * （docs §17.4）。比较仍走柯里化二元通道，可被 WorldOpEvaluator 委托（纯、无世界依赖）。</p>
+ * 支持比较原语：二元 eq/lt/gt/le/ge → BoolValue；
+ * eq 支持 Int/String/AgentRef（按 id）/Direction，类型不符的其余比较 → #f
+ * （docs §17.4）。比较仍走柯里化二元通道，可被 WorldOpEvaluator 委托（纯、无世界依赖）。
  *
- * <p>错误消息为 lambdaexpr {@code TypeException} 的富消息风格回迁（ADR-0006）：
- * 包含原语名与实际操作数（如 {@code 未知二元原语 'gcd'（操作数: 1, 2）}），
- * 是调试 LLM 编译程序的第一现场。</p>
+ * 错误消息为 lambdaexpr TypeException 的富消息风格回迁（ADR-0006）：
+ * 包含原语名与实际操作数（如 未知二元原语 'gcd'（操作数: 1, 2）），
+ * 是调试 LLM 编译程序的第一现场。
  */
 public class ArithmeticOpEvaluator implements OpEvaluator {
 
@@ -91,7 +91,7 @@ public class ArithmeticOpEvaluator implements OpEvaluator {
         return new ClosureValue("y", body, new HashMap<>(state.getE()));
     }
 
-    /** 比较原语：eq 支持 Int/String/AgentRef/Direction；lt/gt/le/ge 仅 Int；类型不符 → #f。 */
+    // 比较原语：eq 支持 Int/String/AgentRef/Direction；lt/gt/le/ge 仅 Int；类型不符 → #f。
     private Value compare(String op, Value v1, Value v2) {
         if (v1 instanceof IntValue i1 && v2 instanceof IntValue i2) {
             boolean r = switch (op) {
@@ -137,7 +137,7 @@ public class ArithmeticOpEvaluator implements OpEvaluator {
         return new ClosureValue("x", body, new HashMap<>(state.getE()));
     }
 
-    /** 富错误消息：原语名 + 实际操作数 + 可用原语清单（lambdaexpr TypeException 风格，ADR-0006）。 */
+    // 富错误消息：原语名 + 实际操作数 + 可用原语清单（lambdaexpr TypeException 风格，ADR-0006）。
     private static SecdEvalException unknownBinary(String op, Value v1, Value v2) {
         return new SecdEvalException(
                 "未知二元原语 '" + op + "'（操作数: " + v1 + ", " + v2 + "）；可用: add mul sub div eq lt gt le ge");

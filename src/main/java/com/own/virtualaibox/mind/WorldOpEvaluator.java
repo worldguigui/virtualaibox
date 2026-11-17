@@ -25,24 +25,22 @@ import java.util.List;
 /**
  * 世界原语求值器：在纯算术之上注入世界副作用原语。
  *
- * <p>原语语义以 λ 操作符实现：</p>
- * <ul>
- *   <li>{@code move dx dy} —— 二元，产生 {@link MoveEffect}</li>
- *   <li>{@code speak target content} —— 二元，产生 {@link SpeakEffect}</li>
- *   <li>{@code remember key content} —— 二元，产生 {@link RememberEffect}</li>
- *   <li>{@code ask-llm prompt} —— 一元，同步调用预言机，把结果文本压入 S</li>
- * </ul>
+ * 原语语义以 λ 操作符实现：
+ *   move dx dy —— 二元，产生 MoveEffect
+ *   speak target content —— 二元，产生 SpeakEffect
+ *   remember key content —— 二元，产生 RememberEffect
+ *   ask-llm prompt —— 一元，同步调用预言机，把结果文本压入 S
  *
- * <p>每个 Agent 持有一份独立实例（绑定自身上下文）。纯算术原语委托给
- * {@link ArithmeticOpEvaluator}；move/speak/remember 的第一次应用由算术求值器
- * 压成 {@link PartialOpValue}，第二次应用在这里完成并产出副作用。</p>
+ * 每个 Agent 持有一份独立实例（绑定自身上下文）。纯算术原语委托给
+ * ArithmeticOpEvaluator；move/speak/remember 的第一次应用由算术求值器
+ * 压成 PartialOpValue，第二次应用在这里完成并产出副作用。
  */
 public class WorldOpEvaluator implements OpEvaluator {
 
     private final Agent agent;
     private final LLMBrain llmBrain;
     private final ArithmeticOpEvaluator arithmetic = new ArithmeticOpEvaluator();
-    /** 感知（每 tick 由 AgentRuntime 注入的世界只读快照）；null 表示纯算术上下文。 */
+    // 感知（每 tick 由 AgentRuntime 注入的世界只读快照）；null 表示纯算术上下文。
     private Perception perception;
 
     public WorldOpEvaluator(Agent agent, LLMBrain llmBrain) {
@@ -50,7 +48,7 @@ public class WorldOpEvaluator implements OpEvaluator {
         this.llmBrain = llmBrain;
     }
 
-    /** 注入本 tick 的感知快照（AgentRuntime 每 tick 调用一次）。 */
+    // 注入本 tick 的感知快照（AgentRuntime 每 tick 调用一次）。
     public void setPerception(Perception perception) {
         this.perception = perception;
     }
@@ -122,7 +120,7 @@ public class WorldOpEvaluator implements OpEvaluator {
 
     // ------------------------------------------------------------------ 感知辅助
 
-    /** 感知原语必须运行在有 Perception 注入的 tick 内（fail-fast，docs §17.4）。 */
+    // 感知原语必须运行在有 Perception 注入的 tick 内（fail-fast，docs §17.4）。
     private Perception perceptionRequired() {
         if (perception == null) {
             throw new IllegalStateException(
@@ -131,7 +129,7 @@ public class WorldOpEvaluator implements OpEvaluator {
         return perception;
     }
 
-    /** 把实参转成 AgentRefValue；非 AgentRef → 返回 #f 的哨兵处理交给各查询（按 id 查无 → null/MAX）。 */
+    // 把实参转成 AgentRefValue；非 AgentRef → 返回 #f 的哨兵处理交给各查询（按 id 查无 → null/MAX）。
     private AgentRefValue toAgentRef(Value v) {
         if (v instanceof AgentRefValue ref) {
             return ref;
@@ -153,7 +151,7 @@ public class WorldOpEvaluator implements OpEvaluator {
         return List.of(new MoveEffect(agent.getId(), delta[0], delta[1], "SECD move " + d.dir));
     }
 
-    /** 方向 → delta 映射（docs §17.4：转换只发生在 DSL 原语层，Effect 层无方向重载）。 */
+    // 方向 → delta 映射（docs §17.4：转换只发生在 DSL 原语层，Effect 层无方向重载）。
     private int[] deltaOf(String dir) {
         return switch (dir) {
             case "north" -> new int[]{0, -1};

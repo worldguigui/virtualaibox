@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 验证程序化构造的 λ 表达式和 SECD 归约正确性。
  *
- * <p>用例对应 lambdaexpr {@code LambdaExprTest} 中的代表性场景：
+ * 用例对应 lambdaexpr LambdaExprTest 中的代表性场景：
  * 算术柯里化、一元原语、闭包应用、闭包环境捕获、纯 λ 丘奇数、发散检测。
- * 不依赖 ANTLR —— 指令树直接用 {@code InstApp/InstLam/...} 手工构造。</p>
+ * 不依赖 ANTLR —— 指令树直接用 InstApp/InstLam/... 手工构造。
  */
 class SECDTest {
 

@@ -8,7 +8,7 @@ import com.own.virtualaibox.domain.agent.Agent;
 import lombok.Data;
 
 @Data
-/** 保存世界边界及其中的 Agent 集合。 */
+// 保存世界边界及其中的 Agent 集合。
 public class World {
     private int width;
     private int height;
@@ -46,7 +46,7 @@ public class World {
         this.items = new ArrayList<>(config.getItems());
     }
 
-    /** 应用配置映射；不会清理居民、资源实例、关系、消息或任务。 */
+    // 应用配置映射；不会清理居民、资源实例、关系、消息或任务。
     public synchronized void applyConfig(WorldConfig config) {
         config.validate();
         if (agents.stream().anyMatch(agent -> agent.getState().getX() >= config.getWidth()
@@ -65,7 +65,7 @@ public class World {
         this.items = new ArrayList<>(config.getItems());
     }
 
-    /** 将已完成身份和位置校验的 Agent 加入世界。 */
+    // 将已完成身份和位置校验的 Agent 加入世界。
     /**
      * @param agent 待加入世界的 Agent
      */

@@ -14,25 +14,25 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AgentMovedEvent extends DomainEvent {
     
-    /** 移动的Agent ID */
+    // 移动的Agent ID
     private String agentId;
     
-    /** 原始位置X */
+    // 原始位置X
     private int fromX;
     
-    /** 原始位置Y */
+    // 原始位置Y
     private int fromY;
     
-    /** 新位置X */
+    // 新位置X
     private int toX;
     
-    /** 新位置Y */
+    // 新位置Y
     private int toY;
     
-    /** 移动距离 */
+    // 移动距离
     private double distance;
     
-    /** 移动原因 */
+    // 移动原因
     private String reason;
     
     @Override

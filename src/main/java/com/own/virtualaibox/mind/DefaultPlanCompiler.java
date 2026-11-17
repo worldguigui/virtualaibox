@@ -22,21 +22,21 @@ import java.util.List;
 /**
  * 行为程序编译器，负责生成默认计划和 onMeet 对话行为。
  *
- * <p><b>默认计划</b>（计划耗尽时编译）：LLM 作 Oracle 决定方向，编译成一条
- * {@value #PATH_LENGTH} 步的路径，路径起点附记忆写入。程序驻留 C 栈跨 tick 执行，
- * 每 tick 只推进"一步动作"，计划自然分片。</p>
+ * 默认计划（计划耗尽时编译）：LLM 作 Oracle 决定方向，编译成一条
+ * PATH_LENGTH 步的路径，路径起点附记忆写入。程序驻留 C 栈跨 tick 执行，
+ * 每 tick 只推进"一步动作"，计划自然分片。
  *
- * <p><b>onMeet 对话</b>（相遇时编译）：把对方当作参数 B，应用 λ 闭包
- * {@code λother. (speak other 问候; remember 相遇)}。闭包应用会挂起现场到 D 栈，
- * 与 {@link AgentRuntime#interrupt} 的中断帧叠加，构成"主计划被中断→对话→恢复"。</p>
+ * onMeet 对话（相遇时编译）：把对方当作参数 B，应用 λ 闭包
+ * λother. (speak other 问候; remember 相遇)。闭包应用会挂起现场到 D 栈，
+ * 与 AgentRuntime#interrupt 的中断帧叠加，构成"主计划被中断→对话→恢复"。
  */
 public class DefaultPlanCompiler {
 
-    /** 默认路径长度（tick 数），每 tick 走一格；可由 virtual-ai-box.runtime.default-plan-length 覆盖。 */
+    // 默认路径长度（tick 数），每 tick 走一格；可由 virtual-ai-box.runtime.default-plan-length 覆盖。
     private static final int DEFAULT_PATH_LENGTH = 3;
 
     private final LLMBrain llmBrain;
-    /** 本次编译的路径长度（tick 数）。 */
+    // 本次编译的路径长度（tick 数）。
     private final int pathLength;
 
     public DefaultPlanCompiler(LLMBrain llmBrain) {
@@ -48,7 +48,7 @@ public class DefaultPlanCompiler {
         this.pathLength = pathLength;
     }
 
-    /** 编译新计划并压入状态 C 栈。 */
+    // 编译新计划并压入状态 C 栈。
     public void compileInto(MachineState state, Agent agent, WorldState worldState) {
         // Oracle：决定本次路径的方向（LLM 失败时由 LLMBrain 自行降级为随机）
         MoveAction direction = llmBrain.decideAction(agent, worldState);
@@ -68,10 +68,10 @@ public class DefaultPlanCompiler {
     }
 
     /**
-      * 编译 onMeet 对话程序：{@code apply(λother. (speak other …; remember …), B)}。
+      * 编译 onMeet 对话程序：apply(λother. (speak other …; remember …), B)。
      *
-     * <p>以闭包应用形式表达"相遇 → 对话"，闭包应用会占用 D 栈一帧；
-     * 与中断帧（{@link AgentRuntime#interrupt}）叠加，验证 D 栈的中断/恢复语义。</p>
+     * 以闭包应用形式表达"相遇 → 对话"，闭包应用会占用 D 栈一帧；
+     * 与中断帧（AgentRuntime#interrupt）叠加，验证 D 栈的中断/恢复语义。
      *
      * @param self  被中断的 Agent
      * @param other 相遇对象（作为闭包实参 B）

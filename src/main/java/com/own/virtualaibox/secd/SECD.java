@@ -16,36 +16,34 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
- * SECD 抽象机驱动。移植自 lambdaexpr 的 {@code SECDMachine}，并做了两处改造：
+ * SECD 抽象机驱动。移植自 lambdaexpr 的 SECDMachine，并做了两处改造：
  *
- * <ul>
- *   <li>状态与驱动分离：S/E/C/D 收敛进 {@link MachineState}，由调用方持有；</li>
- *   <li>副作用隔离：单步/运行返回 {@link Effect} 列表，机器本身不修改 World。</li>
- * </ul>
+ * 状态与驱动分离：S/E/C/D 收敛进 MachineState，由调用方持有；
+ * 副作用隔离：单步/运行返回 Effect 列表，机器本身不修改 World。
  *
- * <p>默认使用 {@link ArithmeticOpEvaluator}（纯算术原语）。
+ * 默认使用 ArithmeticOpEvaluator（纯算术原语）。
  * 可注入世界原语求值器（move/speak/remember/ask-llm），
- * 此时对应原语以 Effect 形式表达世界副作用。</p>
+ * 此时对应原语以 Effect 形式表达世界副作用。
  *
- * <p><b>可观测性</b>（回迁自 lambdaexpr 的 {@code setTrace}，ADR-0006）：
- * {@link #setTrace(Consumer)} 挂载每步转移观察者，每步收到单行文本
+ * 可观测性（回迁自 lambdaexpr 的 setTrace，ADR-0006）：
+ * #setTrace(Consumer) 挂载每步转移观察者，每步收到单行文本
  * （步号 + 规则名 + S/E/C/D 单行摘要）；传 null（默认）即关闭、零开销。
- * 规则名 {@code const/var/app/lam/apply/seq/if/call/restore/halt/diverge} 大致对应
+ * 规则名 const/var/app/lam/apply/seq/if/call/restore/halt/diverge 大致对应
  * 原版教材规则 (1)(2)(3)(4)(5)(8/9)(6)(7)。宿主 AgentRuntime 经
- * {@code virtual-ai-box.runtime.secd-trace-enabled} 接通 DEBUG 日志；该 Consumer 钩子
- * 同时是 MindViewer 前端可视化"机器脉搏"的预留入口。</p>
+ * virtual-ai-box.runtime.secd-trace-enabled 接通 DEBUG 日志；该 Consumer 钩子
+ * 同时是 MindViewer 前端可视化"机器脉搏"的预留入口。
  */
 public class SECD {
 
-    /** 默认最大执行步数，用于防止无限归约。 */
+    // 默认最大执行步数，用于防止无限归约。
     public static final int DEFAULT_MAX_STEPS = 10_000;
 
     private final int maxSteps;
     private final OpEvaluator opEvaluator;
 
-    /** 每步转移观察者（单行文本）；null = 关闭（默认，零开销）。 */
+    // 每步转移观察者（单行文本）；null = 关闭（默认，零开销）。
     private Consumer<String> trace;
-    /** trace 步计数（仅诊断用；每 Agent 独占一台 SECD 实例，无共享）。 */
+    // trace 步计数（仅诊断用；每 Agent 独占一台 SECD 实例，无共享）。
     private long traceStep = 0;
 
     public SECD() {
@@ -61,7 +59,7 @@ public class SECD {
         this.opEvaluator = opEvaluator;
     }
 
-    /** 挂载/卸载每步转移观察者（调试与可视化）；传 null 关闭。 */
+    // 挂载/卸载每步转移观察者（调试与可视化）；传 null 关闭。
     public void setTrace(Consumer<String> trace) {
         this.trace = trace;
     }
@@ -131,8 +129,8 @@ public class SECD {
     }
 
     /**
-     * 执行应用 {@code func arg}。
-     * 操作符值委托给 {@link OpEvaluator}；闭包则挂起当前状态到 D 栈并开启新求值。
+     * 执行应用 func arg。
+     * 操作符值委托给 OpEvaluator；闭包则挂起当前状态到 D 栈并开启新求值。
      */
     private List<Effect> apply(MachineState state, Value func, Value arg) {
         // 原语操作符（一元/二元/柯里化中间态）—— 委托给求值器
@@ -233,7 +231,7 @@ public class SECD {
 
     // ---------------------------------------------------------- trace（ADR-0006）
 
-    /** 每步转移输出一行：步号 + 规则名 + S/E/C/D 单行摘要（观察者未挂载时零开销）。 */
+    // 每步转移输出一行：步号 + 规则名 + S/E/C/D 单行摘要（观察者未挂载时零开销）。
     private void trace(MachineState state, String rule) {
         if (trace == null) {
             return;
@@ -241,7 +239,7 @@ public class SECD {
         trace.accept(String.format("%6d %-8s %s", ++traceStep, rule, compactState(state)));
     }
 
-    /** 单行四寄存器摘要：S/C 顶优先、E 按键排序（输出确定性）、D 只报深度。 */
+    // 单行四寄存器摘要：S/C 顶优先、E 按键排序（输出确定性）、D 只报深度。
     private String compactState(MachineState st) {
         StringBuilder sb = new StringBuilder();
         sb.append("S=[");

@@ -14,19 +14,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AgentSpokeEvent extends DomainEvent {
 
-    /** 说话的Agent ID */
+    // 说话的Agent ID
     private String agentId;
 
-    /** 说话Agent的名称 */
+    // 说话Agent的名称
     private String agentName;
 
-    /** 目标Agent ID（null=广播给所有人） */
+    // 目标Agent ID（null=广播给所有人）
     private String targetId;
 
-    /** 目标Agent名称（null=广播给所有人） */
+    // 目标Agent名称（null=广播给所有人）
     private String targetName;
 
-    /** 说话内容 */
+    // 说话内容
     private String content;
 
     @Override
