@@ -41,7 +41,7 @@ A. 两个入口都内部降级，世界永不因 Oracle 失败而停摆：`decid
 
 ## 最终实现
 
-- `brain/LLMBrain`：唯一 Oracle 封装。`decideAction` = buildPrompt 组装提示词（脚手架段为类常量，政策文本取自 `PromptRegistry`，ADR-0005）→ ChatModel 调用 → JSON 解析 + `moveClamp` 钳制 → 失败随机降级；`chat` = 原样透传 + 异常降级哨兵。
+- `brain/LLMBrain`：唯一 Oracle 封装。`decideAction` = buildPrompt 组装提示词（脚手架段为类常量，规则文本取自 `PromptRegistry`，ADR-0005）→ ChatModel 调用 → JSON 解析 + `moveClamp` 钳制 → 失败随机降级；`chat` = 原样透传 + 异常降级哨兵。
 - 调用点全集（可 grep 验证）：`decideAction` 仅 `DefaultPlanCompiler.compileInto` 与 `AgentRuntime.compileFromProgram` 两处；`chat` 仅 `WorldOpEvaluator.askLlm` 一处。
 - ask-llm 失败哨兵：`LLMBrain.ORACLE_UNAVAILABLE = "[oracle-unavailable]"`——压入 S 栈的普通字符串值，行为程序可用 `eq` 比较检测 Oracle 不可用并分支处理；`LLMRequestEffect` 的 result 字段同样携带哨兵（审计可辨）。
 - `LLMRequestEffect`：ask-llm 咨询产信息性 Effect，`EffectExecutor` 仅日志、未持久化。

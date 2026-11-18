@@ -62,7 +62,7 @@ public class MindController {
     }
 
     /**
-      * 相遇处理：双方各中断当前主计划，执行 onMeet 对话程序，
+     * 相遇处理：双方各中断当前主计划，执行 onMeet 对话程序，
      * 结束后经 D 栈恢复主计划。
      *
      * @return 对话产生的副作用（SpeakEffect / RememberEffect）

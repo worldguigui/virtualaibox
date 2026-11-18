@@ -57,7 +57,7 @@ A. 不是。**三问检验**：1.谁改它（部署者还是开发者）；2.改
 | `virtual-ai-box.prompt` | `PromptProperties`（新） | 仅短标量：默认/降级理由（长文本模板见下条，不在 yml） | `LLMBrain` |
 | `virtual-ai-box.dashboard` | `DashboardProperties`（新） | REST 默认值（事件/记忆条数、轻量快照居民数） | `DashboardController` |
 
-- **提示词外置边界**：政策文本外置文件（`intro.txt` / `task.txt`），脚手架段留代码常量；占位符 `{width}` `{height}` `{tick}` `{name}` `{x}` `{y}` `{personality}` `{memory}` `{moveClamp}` 由代码填充，人格段、记忆段**内容为空时整段省略**（拼接顺序固定）；世界尺寸来自本 tick 的 `WorldState`（新增 `worldWidth`/`worldHeight` 字段，由 `MindController.buildWorldState` 填充），不再硬编码。
+- **提示词外置边界**：规则文本外置文件（`intro.txt` / `task.txt`），脚手架段留代码常量；占位符 `{width}` `{height}` `{tick}` `{name}` `{x}` `{y}` `{personality}` `{memory}` `{moveClamp}` 由代码填充，人格段、记忆段**内容为空时整段省略**（拼接顺序固定）；世界尺寸来自本 tick 的 `WorldState`（新增 `worldWidth`/`worldHeight` 字段，由 `MindController.buildWorldState` 填充），不再硬编码。
 - **人格三级解析**：显式传入的人格（空字段回落）→ 世界配置同名默认居民 → `runtime.default-personality`。
 - **前端一致性**：运行数据以后端 API 为准；`config.ts` 只集中 UI 兜底值；人格只裁剪不预填。
 
@@ -77,12 +77,12 @@ A. 不是。**三问检验**：1.谁改它（部署者还是开发者）；2.改
 | `properties/RuntimeProperties`、`PromptProperties`、`DashboardProperties`（新增） | runtime / prompt / dashboard 三个配置段 |
 | `domain/world/WorldConfig`（扩展） | 默认居民含人格；`validate()` 新增非空名校验，坏配置启动即失败 |
 | `brain/PromptRegistry`（新增） | intro/task 启动加载、裁剪、fail-fast |
-| `brain/LLMBrain`（改造） | `buildPrompt` 改为"文件政策文本 + 代码脚手架"装配；删硬编码提示词与 37x37 |
+| `brain/LLMBrain`（改造） | `buildPrompt` 改为"文件规则文本 + 代码脚手架"装配；删硬编码提示词与 37x37 |
 | `domain/agent/PersonalityProfile`（改造） | 删 Alice/Bob 名字特判；`generic()` / `normalizeFor()` / `PROMPT_FORMAT` 常量 |
 | `mind/WorldPerception`（改造） | 删 `PERCEPTION_RANGE` 常量，改配置注入 |
 | `mind/MindController`、`mind/AgentRuntime`、`mind/DefaultPlanCompiler`、`core/TickSchedule`、`monitor/ConvergenceMonitor`、`domain/event/EventBus`、`core/WorldEngine`、`controller/DashboardController`（改造） | 注入配置类，删除各自魔法数 |
 | `domain/world/WorldState`（改造） | 新增 `worldWidth`/`worldHeight` 与 4 参构造 |
-| `resources/prompts/decision/intro.txt`、`task.txt`（新增） | 提示词政策文本外置 |
+| `resources/prompts/decision/intro.txt`、`task.txt`（新增） | 提示词规则文本外置 |
 | `resources/application.yml` | `virtual-ai-box.*` 各段（主源） |
 | 前端 `src/config.ts`、`src/lib/personality.ts`（改造） | 集中 UI 兜底值；`maxCoordinate` 动态解析 |
 

@@ -98,11 +98,7 @@ public class LLMBrain {
     }
 
 
-    /**
-     * 拼装决策提示词：intro/task 两段"政策文本"取自 PromptRegistry
-     * （文件文本已裁剪首尾空白），脚手架段取自类常量；段间排版由本方法与
-     * 各常量共同负责；人格/记忆段内容为空时整段省略。
-     */
+    // 拼装决策提示词：intro/task 两段规则文本取自 PromptRegistry
     private String buildPrompt(Agent agent, WorldState worldState) {
         StringBuilder sb = new StringBuilder();
 

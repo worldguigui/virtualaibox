@@ -34,20 +34,19 @@ import com.own.virtualaibox.secd.value.VoidValue;
 /**
  * 行为 DSL 编译器：把 *.lambda 源文本编译为 BehaviorProgram。
  *
- * 管线（docs §10）：.lambda → ANTLR 解析 → 本类编译 → SECD → Effect → World。
- * 语法由 src/main/antlr4/.../BehaviorDSL.g4 生成解析器，本类只做
- * "语法树 → SECD Instruction" 的语义编译与静态校验。
+ * .lambda → ANTLR 解析 → 本类编译 → SECD → Effect → World。
+ * 语法由 src/main/antlr4/.../BehaviorDSL.g4 生成解析器，本类只做“语法树 → SECD Instruction” 的语义编译与静态校验。
  *
  * 语义要点：
- *   原语（move/speak/remember/ask-llm/add/mul/succ/sqr/比较/感知）编译为
- *       InstConst(OpValue)，柯里化应用；应用 (f a b) 左结合展开为
- *       ((f a) b)；零参调用 (f) 应用一次到 unit（VoidValue）；
+ *   将原语（move/speak/remember/ask-llm/add/mul/succ/sqr/比较/感知）编译为
+ *   InstConst(OpValue)，柯里化应用；
+ *   应用 (f a b) 左结合展开为((f a) b)；
+ *   零参调用 (f) 应用一次到 unit（VoidValue）；
  *   let x = e in b 编译为 apply(λx.b, e)（β 归约），不占新 D 帧；
- *   if/then/else 编译为 [cond, InstIfThenElse(then, else)]，
- *       条件只弹 S 顶一次并把选中分支压入 C，不占新 D 帧（docs §17.5）；真值遵循
- *       Scheme 风格——仅 #f 为假，其余（0、""、AgentRef 等）皆真；
- *   def 的顶层引用在编译期以自由变量形式记录，编译期按依赖序把 def 求值为闭包值
- *       （SECD 运行编译指令），运行时作为 E 基底；循环/未知引用在加载期报错。
+ *   if/then/else 编译为 [cond, InstIfThenElse(then, else)]，条件只弹 S 顶一次并把选中分支压入 C，不占新 D 帧；
+ *   真值遵循 Scheme 风格：仅 #f 为假，其余（0、""、AgentRef 等）皆真；
+ *   def 的顶层引用在编译期以自由变量形式记录，编译期按依赖序把 def 求值为闭包值（SECD 运行编译指令），运行时作为 E 基底；
+ *   循环/未知引用在加载期报错。
  */
 public class BehaviorCompiler {
 
@@ -116,7 +115,7 @@ public class BehaviorCompiler {
         return new BehaviorProgram(plan, env, env.get("onMeet"));
     }
 
-    // ------------------------------------------------------------------ 解析
+    // ------------------------------ 解析 ------------------------------
 
     private BehaviorDSLParser.ProgContext parse(String source, String sourceName) {
         BehaviorDSLLexer lexer = new BehaviorDSLLexer(CharStreams.fromString(source));
@@ -145,7 +144,7 @@ public class BehaviorCompiler {
         }
     }
 
-    // ---------------------------------------------------------- 语义编译
+    // ------------------------------ 语义编译 ------------------------------
 
     // 一段编译产物：指令 + 顶层自由名称（非局部、非原语的名字引用）。
     private record CompiledExpr(Instruction code, Set<String> freeTopNames) {
@@ -282,11 +281,11 @@ public class BehaviorCompiler {
         return new CompiledExpr(new InstVar(name), Set.of(name));
     }
 
-    // ---------------------------------------------------------- def 解析
+    // ------------------------------ def 解析 ------------------------------
 
     /**
-     * 按依赖序把 def 求值为闭包值。被引用的 def 先求值并注入 E，
-     * 使闭包捕获其依赖；循环引用报错。
+     * 按依赖序把 def 求值为闭包值。
+     * 被引用的 def 先求值并注入 E，使闭包捕获其依赖；循环引用报错。
      */
     private Map<String, Value> resolveDefs(Map<String, DefDef> defs, String sourceName) {
         Map<String, Value> env = new HashMap<>();
