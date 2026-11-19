@@ -50,5 +50,5 @@
 
 ## 本项目的交付物边界
 
-- 文档体系：`README.md`（维护入口）→ `vision.md`（项目定位）→ `architecture.md`（当前架构 SSOT）→ `logic-walkthrough.md`（执行链路）→ `spec/`（系统契约）→ `decisions/`（架构决策）→ `development/`（协作规范与知识地图）→ `tasks/`（任务记录与设计方案）→ `changelog.md`（历史演进）→ `archive/`（历史文档，只读）。
+- 文档体系：`README.md`（维护入口）→ `vision.md`（项目定位）→ `architecture.md`（当前架构 SSOT）→ `logic-walkthrough.md`（执行链路）→ `spec/`（系统契约）→ `decisions/`（架构决策）→ `development/`（协作规范与知识地图）→ `archive/`（历史文档，只读）。
 - 当前代码问题（未完成接口、待处理项）不在本文档处理范围，记录于 `consistency-audit.md`（问题台账）。

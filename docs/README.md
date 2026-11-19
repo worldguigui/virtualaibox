@@ -39,23 +39,44 @@ docs/
 
 发生冲突时按以下顺序判断：
 
-1. 当前代码和当前测试结果；
-2. [architecture.md](architecture.md) 的当前架构描述；
-3. 对应的 [spec/](spec/) 契约；
-4. 已接受的 [decisions/](decisions/)；
-5. [vision.md](vision.md) 的项目边界；
+1. 当前代码和当前测试结果（行为事实：实际怎么跑）；
+2. 已接受的 [decisions/](decisions/)（决策事实：为什么这样定、红线在哪）；
+3. [architecture.md](architecture.md) 的当前架构描述；
+4. 对应的 [spec/](spec/) 契约；
+5. [vision.md](vision.md) 的项目边界。
+
+代码与 ADR 不一致时，不要擅自改 ADR，也不要为了"看起来一致"同时改两处：先报告，由人决定是改代码还是新立 ADR。
+
+## ADR 与 Spec 的对应关系
+
+一份 ADR 的决策结论，通常由一个或几个 spec 承接为可执行的契约：
+
+| ADR | 决策主题 | 承接契约的 Spec |
+|---|---|---|
+| [ADR-0001](decisions/ADR-0001-secd-runtime.md) | SECD 作为行为内核 | [agent-runtime](spec/agent-runtime.md)「SECD 内核」 |
+| [ADR-0002](decisions/ADR-0002-llm-oracle.md) | LLM 仅作 Oracle | [agent-runtime](spec/agent-runtime.md)「LLM Oracle 入口」、[effect](spec/effect.md)「LLMRequestEffect 的语义」、[behavior-dsl](spec/behavior-dsl.md)「原语全集」 |
+| [ADR-0003](decisions/ADR-0003-effect-isolation.md) | Effect 隔离副作用 | [effect](spec/effect.md) 全文 |
+| [ADR-0004](decisions/ADR-0004-d-stack-interrupt.md) | D 栈中断/恢复 | [agent-runtime](spec/agent-runtime.md)「中断与恢复」、[behavior-dsl](spec/behavior-dsl.md)「文件结构」 |
+| [ADR-0005](decisions/ADR-0005-config-extraction.md) | 配置参数提取 | [perception](spec/perception.md)「感知半径」、[personality](spec/personality.md)「三级解析」、[api](spec/api.md)「配置键」、[agent-runtime](spec/agent-runtime.md)「运行时配置键」 |
+| [ADR-0006](decisions/ADR-0006-secd-observability-and-primitives.md) | 可观测性与原语补全 | [agent-runtime](spec/agent-runtime.md)「LLM Oracle 入口」、[behavior-dsl](spec/behavior-dsl.md)「原语全集」 |
+| [ADR-0007](decisions/ADR-0007-spring-boot-4-java-25-migration.md) | Boot 4 / Java 25 迁移 | 无（只改依赖基线，不改对外契约） |
+
+分工原则：**ADR 只写取舍与理由，spec 只写字段、协议与语义**。同一个事实只在一处展开，另一处指过去。
 
 ## 一次代码变更需要更新什么
 
 - 修改行为语义、输入输出或不变量：同步更新对应 `spec/`，并补充或调整测试。
-- 引入新的跨模块架构选择：新增 ADR 到 `decisions/`，并在 `architecture.md` §7 决策索引中登记。
+- 引入新的跨模块架构选择：新增 ADR 到 `decisions/`，并在上方「ADR 与 Spec 的对应关系」中登记。
 - 修改主流程或 tick 顺序：同步更新 `logic-walkthrough.md` §1 与 `spec/agent-runtime.md`。
 - 修复历史审计中记录的问题：先重新验证，再将当前事实更新到 `architecture.md` 或对应 `spec/`；台账中保留原始发现并标记关闭日期。
-- 修改公开 REST 接口：同时更新 `spec/api.md`、后端响应、前端类型和测试（`spec/api.md` 目前仅覆盖 7 个端点，补全前以代码为准）。
+- 修改公开 REST 接口：同时更新 `spec/api.md`、后端响应、前端类型和测试（`spec/api.md` 已列出全部 20 个端点，字段细节以代码为准）。
 - 修改协作流程或权限边界：更新 `development/AI_WORKFLOW.md`。
 
 ## 维护规则
 
-- `vision` 只回答是什么、给谁用和边界；`architecture` 只描述当前系统组成和约束；`spec` 只描述当前契约。
-- `decisions` 只记录为什么做出重要选择，已接受决策只增不改；若后来推翻，新增 ADR 并注明替代关系。
+- `vision` 只回答是什么、给谁用和边界；`architecture` 只描述当前系统组成和约束；`spec` 只描述当前契约；`decisions` 只记录为什么做出重要选择。
+- 已接受决策只增不改；若后来推翻，新增 ADR 并注明替代关系。
+- **不抄数字**：测试例数、类数、端点数、行数不写进正文——它们随改动立刻过期。需要现状时给命令，让人现场看。
+- **不抄配置值**：文档只写配置键名，默认值以 `application.yml` 为准（抄值抄出来的事故比不写更贵）。
 - 文档完成或被替代后移动到 `archive/`，不要直接删除仍有追溯价值的内容。
+- 新增 ADR 从 [decisions/ADR-TEMPLATE.md](decisions/ADR-TEMPLATE.md) 起稿，新增 spec 从 [spec/SPEC-TEMPLATE.md](spec/SPEC-TEMPLATE.md) 起稿。

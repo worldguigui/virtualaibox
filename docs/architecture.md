@@ -2,7 +2,7 @@
 
 > 状态：CURRENT。本文档是**当前架构的唯一权威总览（Single Source of Truth）**。
 > 文档目录、维护规则和权威关系见 [`docs/README.md`](README.md)。
-> 组件级契约见 `spec/`，设计决策见 `decisions/`，单次改动方案见 `tasks/`，历史演进见 `changelog.md`，历史设计见 `archive/`（只读）。
+> 组件级契约见 `spec/`，设计决策见 `decisions/`，历史设计见 `archive/`（只读）。
 > 本文档只描述**当前真实存在**的系统；已废弃/计划中的内容不在此列。
 
 ## 1. 当前系统组成
@@ -49,11 +49,11 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 | Instruction（7 种） | C 栈指令：Const/Var/Lam/App/Apply/Seq/IfThenElse | `secd/Inst*.java` | CURRENT |
 | Value（11 种） | Int/String/Op/PartialOp/Closure/Var/AgentRef/Bool/Direction/Infinite/Void | `secd/value/` | CURRENT |
 | ArithmeticOpEvaluator | 纯算术（add/mul/sub/div、succ/sqr/pred/zerop）+ 比较（eq/lt/gt/le/ge）；富错误消息 SecdEvalException（ADR-0006） | `secd/ArithmeticOpEvaluator.java` | CURRENT |
-| AgentRuntime | 每 Agent 一台 SECD；tick 推进（≤500 步）；D 栈中断/恢复；DSL 加载 | `mind/AgentRuntime.java` | CURRENT（测试状态见 §6） |
+| AgentRuntime | 每 Agent 一台 SECD；tick 推进；D 栈中断/恢复；DSL 加载 | `mind/AgentRuntime.java` | CURRENT |
 | MindController | 决策阶段驱动全部运行时；相遇 onMeet 中断双方；运行时缓存 | `mind/MindController.java` | CURRENT |
 | DefaultPlanCompiler | 内置默认计划（LLM 定方向 + 3 步路径）；内置 onMeet | `mind/DefaultPlanCompiler.java` | CURRENT |
 | WorldOpEvaluator | 世界原语（move/speak/remember/ask-llm/感知/方向移动）；只产 Effect | `mind/WorldOpEvaluator.java` | CURRENT |
-| Perception / WorldPerception | 只读世界视图；PERCEPTION_RANGE=5（曼哈顿）；同 tick 快照 | `mind/Perception.java`、`mind/WorldPerception.java` | CURRENT |
+| Perception / WorldPerception | 只读世界视图；半径由 `perception-range` 配置注入；同 tick 快照 | `mind/Perception.java`、`mind/WorldPerception.java` | CURRENT |
 | Effect（4 种） | MoveEffect/SpeakEffect/RememberEffect/LLMRequestEffect | `effect/` | CURRENT |
 | EffectExecutor | 副作用落地（唯一修改 World 的路径） | `executor/EffectExecutor.java` | CURRENT |
 | ActionExecutor | 移动落地（边界钳制）+ agent.moved 事件 | `executor/ActionExecutor.java` | CURRENT |
@@ -71,8 +71,8 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 
 详细契约见各 `spec/` 文档，这里给权威摘要：
 
-1. **Tick 流**：`WorldEngine.step()` → `VirtualClock.stepForward()` → `TickSchedule.processTick()` → Phase1 `tick.started` → Phase2 `decisionPhase` → Phase3 `executionPhase` → Phase4 相遇检测/onMeet → Phase4.5 收敛检测 → Phase5 `tick.ended` → `WorldEngine.simulateTownTick()` 资源再生与自动拾取。（见 `spec/agent-runtime.md` §1）
-2. **Agent 行为执行流**：decisionPhase 逐个 Agent 调 `AgentRuntime.tick(worldState)`；计划耗尽则重编译（DSL 或默认计划）；每 tick 至多推进一步主动作（Move/Speak）即停；行为程序驻留 C 栈跨 tick 执行。（见 `spec/agent-runtime.md` §2）
+1. **Tick 流**：`WorldEngine.step()` → `VirtualClock.stepForward()` → `TickSchedule.processTick()` → Phase1 `tick.started` → Phase2 `decisionPhase` → Phase3 `executionPhase` → Phase4 相遇检测/onMeet → Phase4.5 收敛检测 → Phase5 `tick.ended` → `WorldEngine.simulateTownTick()` 资源再生与自动拾取。（见 `spec/agent-runtime.md`「一次 tick 的阶段顺序」）
+2. **Agent 行为执行流**：decisionPhase 逐个 Agent 调 `AgentRuntime.tick(worldState)`；计划耗尽则重编译（DSL 或默认计划）；每 tick 至多推进一步主动作（Move/Speak）即停；行为程序驻留 C 栈跨 tick 执行。（见 `spec/agent-runtime.md`「单 Agent 的 tick」）
 3. **Perception 流**：tick 开头注入只读快照 → 感知原语压值进 S 栈（null→`#f`），不产 Effect。（见 `spec/perception.md`）
 4. **Effect 执行流**：SECD 计算产出 Effect → MindController 汇总 → EffectExecutor 落地（Move→World+事件、Speak→事件、Remember→记忆、LLMRequest→仅日志）。（见 `spec/effect.md`）
 5. **LLM Oracle 流**：仅两处——计划编译期 `decideAction`（定 dx/dy）；`ask-llm` 原语（返回值压 S）。LLM 不直接修改 World。（见 ADR-0002）
@@ -95,23 +95,21 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 | 9 | **相遇去抖**：同 pair 首次相遇才触发 onMeet | `TickSchedule.activeMeetings` |
 | 10 | **ITE 与 C 栈同构**：if 不产生新 D 帧、不残留条件值 | `SECDTest.ifConsumesCondNoStrayValue` |
 | 11 | **move 单形态 Effect**：方向/整数移动统一 MoveEffect(dx,dy)，Effect 层无方向重载 | `BehaviorCompilerTest.moveUnifiedEffectContract` |
-| 12 | **感知范围 = 5（曼哈顿）** | `WorldPerception.PERCEPTION_RANGE` |
+| 12 | **感知半径由配置决定**（`perception-range`，曼哈顿距离），不是代码常量 | `WorldPerception` 构造注入；ADR-0005 |
 | 13 | **收敛边沿触发**：条件首次成立发布一次，状态打破后清除才再发 | `ConvergenceMonitorTest.stuckAgentAtBoundaryFiresAgentStuck` |
 
 ## 5. 状态标注与已知不确定性
 
 - **CURRENT**：上表所列全部组件（当前真实实现）。
-- **DEPRECATED**：`ObserveEffect`（设计草案中的感知副作用，P6 起感知只读化后废弃，代码中不存在）；定位"每个 Agent 变成一台 SECD 抽象机"（改为"Agent 拥有 SECD 行为运行时"，见 ADR-0001）。
-- **PLANNED**：`and/or/not` 原语、`observe` 原语、感知范围可配置（历史设计 P6.1）；社会关系图/反事实推演/行为进化/世界回放（历史设计 §16）。均未实现。
+- **DEPRECATED**：`ObserveEffect`（设计草案中的感知副作用，感知只读化后废弃，代码中不存在）；定位"每个 Agent 变成一台 SECD 抽象机"（改为"Agent 拥有 SECD 行为运行时"，见 ADR-0001）。
+- **PLANNED**：`and/or/not` 原语、`observe` 原语；社会关系图/反事实推演/行为进化/世界回放（历史设计 §16）。均未实现。
 - **UNKNOWN**：见 §6。
 
 ## 6. 已知不确定性（不擅自推断）
 
 ### 6.1 测试状态
-- **2026-11-09 / `.\mvnw.cmd test` / 10 个测试类 95 例全部通过**（SECDTest 37、BehaviorCompilerTest 16、WorldEngineTest 11、DashboardControllerTest 7、AgentRuntimeTest 5、ConvergenceMonitorTest 4、PromptRegistryTest 4、PersonalityProfileTest 5、ConfigDefaultsConsistencyTest 5、VirtualAiBoxApplicationTests 1）。新增用例对应 ADR-0006（SECD 算术补全/富消息/trace、坏程序降级）。
-- 2026-10-24 / 75 例通过的记录已被上条取代（其间 ADR-0005 增至 85 例）。
-- 前端 `npm run build` 通过；Vite 仅报告 bundle 体积提示，不影响构建结果。
-- 2026-08-22 的失败记录保留在 `consistency-audit.md`，作为历史审计背景，不再代表当前测试状态。
+- 本文件不记录测试用例数量：数字随用例增删立即过期，抄录一次就多一处需要维护的谎言。需要现状时执行 `.\mvnw.cmd test` 看输出。
+- 前端构建：`cd frontend && npm run build`；Vite 可能报告 bundle 体积提示，不影响构建结果。
 
 ### 6.2 Agent 初始化
 - `WorldEngine.init()` 创建默认居民；`WorldEngine.createAndAddAgent()` 统一负责身份、位置、记忆和 EventBus 注册；`DashboardController.addAgent()` 通过该入口创建居民。接口字段见 `spec/api.md`。
@@ -131,9 +129,7 @@ ConvergenceMonitor       ← 每 tick 末尾观察世界与 D 栈，发布收敛
 | Personality | `spec/personality.md` |
 | Perception | `spec/perception.md` |
 | Effect 层 | `spec/effect.md` |
-| 设计决策 | `decisions/ADR-0001~0006` |
+| 设计决策 | `decisions/ADR-0001~0007` |
 | 协作规范 / 知识地图 | `development/AI_WORKFLOW.md`、`development/KNOWLEDGE_MAP.md` |
-| 任务记录与设计方案 | `tasks/` |
-| 历史演进 | `changelog.md` |
-| 审计记录 | `consistency-audit.md` |
+| 审计记录（历史） | `consistency-audit.md` |
 | 历史设计（只读） | `archive/design-v0.3-frozen.md` |

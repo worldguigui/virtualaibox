@@ -86,17 +86,22 @@ http://localhost:8080
 
 ```text
 docs/
-├── vision.md              # 为什么做、是什么、边界
-├── architecture.md        # 当前架构唯一总览 / SSOT
-├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect）
-├── decisions/             # ADR（架构决策记录）：0001=SECD 内核、0002=LLM Oracle、0003=Effect 隔离、0004=D 栈中断、0005=配置提取、0006=SECD 可观测性与原语补全
-├── changelog.md           # P0-P6 历史演进
-├── consistency-audit.md   # 文档-代码一致性审计记录
-└── archive/               # 历史文档（只读）：design-v0.3-frozen.md、logs.md
+├── README.md              # 文档入口：三层权威链、地图、ADR 索引、归属表
+├── vision.md              # 为什么做、是什么、不做什么
+├── architecture.md        # 当前架构唯一总览 / SSOT（组件 + tick 路径 + 不变量）
+├── spec/                  # 系统契约（agent-runtime / behavior-dsl / perception / effect / personality / api）
+├── verification.md        # 唯一允许写数字的地方：日期 + 命令 + 结果
+├── adr/                   # 架构决策记录 0001-0008（只增不改）
+├── development/           # 协作规范与个人知识地图
+└── archive/               # 历史文档（只读）：旧设计、旧审计、ADR 实施记录
 ```
 
 ## 七-版本记录
 > 更新规则：**新版本条目插入本列表顶部**（最新在上），历史条目只追加不改。
+
+### vab2.1.10 2026-11-19
+
+1. 修改adr和spec的模板文档。修改对应的文档的内容，
 
 ### vab2.1.9 2026-11-18
 
